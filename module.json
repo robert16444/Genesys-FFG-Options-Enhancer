@@ -3,7 +3,12 @@
   "title": "Genesys FFG Options Enhancer",
   "description": "Enhances the Genesys FFG system with convenient tools: Roll Requests, Talent Search, Item Transfer and more.",
   "version": "1.0.0",
-  "author": "robert16444",
+  "authors": [
+    {
+      "name": "robert16444",
+      "url": "https://github.com/robert16444"
+    }
+  ],
   "minimumCoreVersion": "12",
   "compatibleCoreVersion": "12",
   "esmodules": [
@@ -16,14 +21,6 @@
     "templates/request-ui.hbs"
   ],
   "socket": true,
-  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/archive/refs/heads/main.zip",
-  "manifest": "https://raw.githubusercontent.com/robert16444/Genesys-FFG-Options-Enhancer/main/module.json",
-  "authors": [
-    {
-      "name": "robert16444",
-      "url": "https://github.com/robert16444"
-    }
-  ],
   "relationships": {
     "systems": [
       {
@@ -31,5 +28,7 @@
         "type": "system"
       }
     ]
-  }
+  },
+  "manifest": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/module.json",
+  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/Genesys-FFG-Options-Enhancer.zip"
 }
