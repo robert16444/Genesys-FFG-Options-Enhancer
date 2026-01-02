@@ -1,5 +1,5 @@
 <form class="grr-form">
-  <h3>Online Players</h3>
+  <h3>{{grr_localize 'request.onlinePlayers'}}</h3>
   <div class="grr-userlist">
     {{#each onlineUsers}}
       <div class="grr-user {{#unless hasActor}}grr-disabled{{/unless}}" data-user-id="{{id}}" data-actor-id="{{actorId}}">
@@ -11,50 +11,50 @@
       </div>
     {{/each}}
     {{#unless onlineUsers.length}}
-      <p class="grr-muted">No online players.</p>
+      <p class="grr-muted">{{grr_localize 'request.noOnlinePlayers'}}</p>
     {{/unless}}
   </div>
 
   <hr/>
 
   <div class="grr-field">
-    <label>Label (shown to players)</label>
-    <input type="text" name="label" placeholder="e.g. Perception check at the door" />
+    <label>{{grr_localize 'request.label'}}</label>
+    <input type="text" name="label" placeholder="{{grr_localize 'request.labelPlaceholder'}}" />
   </div>
 
   <div class="grr-field">
-    <label>Skill</label>
+    <label>{{grr_localize 'request.skill'}}</label>
     <div class="grr-row">
       <select name="skillKey">
-        <option value="">(select player(s) first)</option>
+        <option value="">{{grr_localize 'request.selectPlayersFirst'}}</option>
       </select>
-      <button type="button" name="refreshSkills" class="grr-btn">↻</button>
+      <button type="button" name="refresh{{grr_localize 'request.skill'}}s" class="grr-btn">↻</button>
     </div>
-    <p class="grr-muted">Select one or more players above first. Skills are read from the first selected character.</p>
+    <p class="grr-muted">Select one or more players above first. {{grr_localize 'request.skill'}}s are read from the first selected character.</p>
   </div>
 
   <div class="grr-grid4">
     <div class="grr-field">
-      <label>Difficulty (purple)</label>
+      <label>{{grr_localize 'request.difficulty'}} (purple)</label>
       <input type="number" name="difficulty" value="0" min="0" step="1" />
     </div>
     <div class="grr-field">
-      <label>Challenge upgrades (red)</label>
+      <label>{{grr_localize 'request.challengeUpgrades'}}</label>
       <input type="number" name="challenge" value="0" min="0" step="1" />
-      <p class="grr-muted">Upgrades difficulty (purple→red). If no purple, adds purple first (system rules).</p>
+      <p class="grr-muted">{{grr_localize 'request.challengeHelp'}}</p>
     </div>
     <div class="grr-field">
-      <label>Setback (black)</label>
+      <label>{{grr_localize 'request.setback'}}</label>
       <input type="number" name="setback" value="0" min="0" step="1" />
     </div>
     <div class="grr-field">
-      <label>Boost (blue)</label>
+      <label>{{grr_localize 'request.boost'}}</label>
       <input type="number" name="boost" value="0" min="0" step="1" />
     </div>
   </div>
 
   <div class="grr-field">
-    <label>Roll mode</label>
+    <label>{{grr_localize 'request.rollMode'}}</label>
     <select name="rollMode">
       {{#each rollModes}}
         <option value="{{id}}">{{label}}</option>
@@ -63,6 +63,6 @@
   </div>
 
   <div class="grr-actions">
-    <button type="button" name="send" class="grr-primary"><i class="fas fa-paper-plane"></i> Send Request</button>
+    <button type="button" name="send" class="grr-primary"><i class="fas fa-paper-plane"></i> {{grr_localize 'request.send'}}</button>
   </div>
 </form>

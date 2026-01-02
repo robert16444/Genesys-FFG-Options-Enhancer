@@ -19,3 +19,10 @@
 .grr-player-popup .grr-row { display: flex; gap: 10px; align-items: center; }
 .grr-player-popup .grr-col { display: flex; flex-direction: column; gap: 2px; }
 .grr-player-popup .grr-sub { font-size: 12px; opacity: 0.85; }
+
+.currency-manager.nice .card { padding: 8px; border: 1px solid var(--color-border); border-radius: 6px; background: rgba(0,0,0,0.05); margin-bottom: 8px; }
+.currency-manager.nice .actions .button, .currency-manager.nice button { padding: 6px 10px; border-radius: 6px; }
+.currency-manager.nice .flex-row.gap { display:flex; gap:8px; flex-wrap:wrap; }
+
+.gfoe-dialog.nice .form-grid { display:grid; grid-template-columns: 1fr 2fr; gap:6px; }
+.gfoe-dialog.nice .dialog-buttons { margin-top: 8px; display:flex; justify-content:flex-end; }

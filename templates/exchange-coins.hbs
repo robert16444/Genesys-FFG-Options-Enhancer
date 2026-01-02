@@ -1,0 +1,25 @@
+
+<div class="gfoe-dialog nice">
+  <h3>{{localize "GFOE.ExchangeCoins"}}</h3>
+  <div class="form-grid">
+    <label>{{localize "GFOE.From"}}</label>
+    <div class="radio-group">
+      <label><input type="radio" name="ex-from" value="g" checked> {{localize "GFOE.Gold"}}</label>
+      <label><input type="radio" name="ex-from" value="s"> {{localize "GFOE.Silver"}}</label>
+      <label><input type="radio" name="ex-from" value="b"> {{localize "GFOE.Bronze"}}</label>
+    </div>
+
+    <label>{{localize "GFOE.To"}}</label>
+    <div class="radio-group">
+      <label><input type="radio" name="ex-to" value="g"> {{localize "GFOE.Gold"}}</label>
+      <label><input type="radio" name="ex-to" value="s" checked> {{localize "GFOE.Silver"}}</label>
+      <label><input type="radio" name="ex-to" value="b"> {{localize "GFOE.Bronze"}}</label>
+    </div>
+
+    <label>{{localize "GFOE.Amount"}}</label>
+    <input type="number" name="ex-amount" min="0" value="0"/>
+  </div>
+  <footer class="dialog-buttons">
+    <button type="button" class="apply-exchange"><i class="fa-solid fa-right-left"></i> {{localize "GFOE.ApplyExchange"}}</button>
+  </footer>
+</div>

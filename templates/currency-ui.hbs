@@ -1,0 +1,20 @@
+
+<div class="currency-manager nice">
+  <h2>{{localize "GFOE.CurrencyTitle"}}</h2>
+
+  <section class="balance card">
+    <h3>{{localize "GFOE.CurrentBalance"}}</h3>
+    <div class="grid two-column">
+      <div class="label">{{localize "GFOE.Gold"}}</div><div class="value">{{balance.g}}</div>
+      <div class="label">{{localize "GFOE.Silver"}}</div><div class="value">{{balance.s}}</div>
+      <div class="label">{{localize "GFOE.Bronze"}}</div><div class="value">{{balance.b}}</div>
+    </div>
+  </section>
+
+  <section class="actions flex-row gap">
+    <button type="button" class="open-add"><i class="fa-solid fa-plus"></i> {{localize "GFOE.OpenAdd"}}</button>
+    <button type="button" class="open-remove"><i class="fa-solid fa-minus"></i> {{localize "GFOE.OpenRemove"}}</button>
+    <button type="button" class="open-exchange"><i class="fa-solid fa-right-left"></i> {{localize "GFOE.OpenExchange"}}</button>
+    <button type="button" class="open-send"><i class="fa-solid fa-paper-plane"></i> {{localize "GFOE.OpenSend"}}</button>
+  </section>
+</div>

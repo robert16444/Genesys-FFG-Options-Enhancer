@@ -1,0 +1,32 @@
+
+<div class="gfoe-dialog nice">
+  <h3>{{localize "GFOE.RemoveCoins"}}</h3>
+  <div class="radio-group">
+    <label><input type="radio" name="remove-mode" value="specific" checked> {{localize "GFOE.RemoveSpecific"}}</label>
+    <label><input type="radio" name="remove-mode" value="value"> {{localize "GFOE.RemoveByValue"}}</label>
+  </div>
+
+  <div class="remove-specific">
+    <div class="form-grid">
+      <label>{{localize "GFOE.Gold"}}</label><input type="number" name="rem-g" min="0" value="0"/>
+      <label>{{localize "GFOE.Silver"}}</label><input type="number" name="rem-s" min="0" value="0"/>
+      <label>{{localize "GFOE.Bronze"}}</label><input type="number" name="rem-b" min="0" value="0"/>
+    </div>
+  </div>
+
+  <div class="remove-value" style="display:none;">
+    <div class="form-grid">
+      <label>{{localize "GFOE.Amount"}}</label><input type="number" name="rem-amount" min="0" value="0"/>
+      <label>{{localize "GFOE.Unit"}}</label>
+      <div class="radio-group">
+        <label><input type="radio" name="rem-unit" value="g" checked> {{localize "GFOE.Gold"}}</label>
+        <label><input type="radio" name="rem-unit" value="s"> {{localize "GFOE.Silver"}}</label>
+        <label><input type="radio" name="rem-unit" value="b"> {{localize "GFOE.Bronze"}}</label>
+      </div>
+    </div>
+  </div>
+
+  <footer class="dialog-buttons">
+    <button type="button" class="apply-remove"><i class="fa-solid fa-minus"></i> {{localize "GFOE.ApplyRemove"}}</button>
+  </footer>
+</div>

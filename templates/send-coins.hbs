@@ -1,0 +1,42 @@
+
+<div class="gfoe-dialog nice">
+  <h3>{{localize "GFOE.SendCoins"}}</h3>
+
+  <div class="form-grid">
+    <label>{{localize "GFOE.Recipient"}}</label>
+    <select name="send-target">
+      {{#each recipients as |rcp|}}
+        <option value="{{rcp.id}}">{{rcp.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+
+  <div class="radio-group">
+    <label><input type="radio" name="send-mode" value="specific" checked> {{localize "GFOE.SendSpecific"}}</label>
+    <label><input type="radio" name="send-mode" value="value"> {{localize "GFOE.SendByValue"}}</label>
+  </div>
+
+  <div class="send-specific">
+    <div class="form-grid">
+      <label>{{localize "GFOE.Gold"}}</label><input type="number" name="send-g" min="0" value="0"/>
+      <label>{{localize "GFOE.Silver"}}</label><input type="number" name="send-s" min="0" value="0"/>
+      <label>{{localize "GFOE.Bronze"}}</label><input type="number" name="send-b" min="0" value="0"/>
+    </div>
+  </div>
+
+  <div class="send-value" style="display:none;">
+    <div class="form-grid">
+      <label>{{localize "GFOE.Amount"}}</label><input type="number" name="send-amount" min="0" value="0"/>
+      <label>{{localize "GFOE.Unit"}}</label>
+      <div class="radio-group">
+        <label><input type="radio" name="send-unit" value="g" checked> {{localize "GFOE.Gold"}}</label>
+        <label><input type="radio" name="send-unit" value="s"> {{localize "GFOE.Silver"}}</label>
+        <label><input type="radio" name="send-unit" value="b"> {{localize "GFOE.Bronze"}}</label>
+      </div>
+    </div>
+  </div>
+
+  <footer class="dialog-buttons">
+    <button type="button" class="apply-send"><i class="fa-solid fa-paper-plane"></i> {{localize "GFOE.ApplySend"}}</button>
+  </footer>
+</div>

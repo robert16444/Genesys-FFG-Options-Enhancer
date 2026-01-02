@@ -1,4 +1,6 @@
+import { GFOECurrency, GFOECurrencyApp, registerCurrencyUIHook } from './currency.js';
 import { RollRequestApp } from "./request-app.js";
+import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
 import { openTalentSearch } from "./talent-search.js";
 
@@ -6,32 +8,77 @@ const MODULE_ID = "genesys-ffg-options-enhancer";
 function dbg(...args) { console.log(`${MODULE_ID} |`, ...args); }
 
 Hooks.once("init", () => {
-  dbg("init");
+  try {
+    game.settings.register(MODULE_ID, "activationCostLabel", {
+      name: game.i18n?.localize?.("settings.activationCostLabelName") ?? "Activation cost label",
+      hint: game.i18n?.localize?.("settings.activationCostLabelHint") ?? "Text in a spell description that enables the Cast button (default). Case-insensitive.",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "Koszt aktywacji"
+    });
+    game.settings.register(MODULE_ID, "enableCurrency", {
+      name: game.i18n?.localize?.("settings.enableCurrencyName") ?? "Enable currency manager",
+      hint: game.i18n?.localize?.("settings.enableCurrencyHint") ?? "If unchecked, currency UI and hooks are disabled.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+    game.settings.register(MODULE_ID, "enableItemSend", {
+      name: game.i18n?.localize?.("settings.enableItemSendName") ?? "Enable item transfer",
+      hint: game.i18n?.localize?.("settings.enableItemSendHint") ?? "If unchecked, sending items between actors is disabled.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+    game.settings.register(MODULE_ID, "enableTalentSearch", {
+      name: game.i18n?.localize?.("settings.enableTalentSearchName") ?? "Enable talent/spell search",
+      hint: game.i18n?.localize?.("settings.enableTalentSearchHint") ?? "If unchecked, the Talent Search tool is hidden and disabled.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+    game.settings.register(MODULE_ID, "enableRequestRolls", {
+      name: game.i18n?.localize?.("settings.enableRequestRollsName") ?? "Enable roll requests",
+      hint: game.i18n?.localize?.("settings.enableRequestRollsHint") ?? "If unchecked, the Request a Roll tool is hidden and disabled.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+  } catch (e) { console.error(MODULE_ID, e); }
+
+dbg("init");
 
   Hooks.on("getSceneControlButtons", (controls) => {
     const tokenControls = controls.find(c => c.name === "token") ?? controls[0];
     if (!tokenControls) return;
 
-    // GM tool: Request a Roll
-    if (game.user?.isGM) {
-      const existsRoll = tokenControls.tools?.some(t => t.name === "grr-request-roll");
-      if (!existsRoll) {
+    if (game.user?.isGM && game.settings.get(MODULE_ID, "enableRequestRolls")) {
+      const exists = tokenControls.tools?.some(t => t.name === "grr-request-roll");
+      if (!exists) {
         tokenControls.tools.push({
           name: "grr-request-roll",
-          title: "Request a Roll",
-          icon: "fas fa-dice",
+          title: Lang.t("controls.requestRoll"),
+          icon: "fas fa-dice-d20",
           button: true,
           onClick: () => new RollRequestApp().render(true)
         });
       }
     }
 
-    // Player tool: Talent Search
     const existsTalent = tokenControls.tools?.some(t => t.name === "grr-talent-search");
-    if (!existsTalent) {
+    if (game.settings.get(MODULE_ID, "enableTalentSearch") && !existsTalent) {
       tokenControls.tools.push({
         name: "grr-talent-search",
-        title: "Talent Search",
+        title: Lang.t("controls.talentSearch"),
         icon: "fas fa-magnifying-glass",
         button: true,
         onClick: () => openTalentSearch()
@@ -43,12 +90,13 @@ Hooks.once("init", () => {
 Hooks.once("ready", async () => {
   dbg("ready", { user: game.user?.name, id: game.user?.id, isGM: game.user?.isGM });
 
-  registerItemTransferFeature();
+  if (game.settings.get(MODULE_ID, "enableItemSend")) registerItemTransferFeature();
 
   game.socket.on(`module.${MODULE_ID}`, async (payload) => {
     try {
       dbg("socket received", payload);
       if (!payload?.type) return;
+      if (payload.type === "reloadAll") { if (!window._gfoeReload) { window._gfoeReload = true; setTimeout(() => window.location.reload(), 200); } return; }
 
       if (payload.type === "ROLL_REQUEST") {
         if (payload.toUser && payload.toUser !== game.user.id) return;
@@ -56,7 +104,7 @@ Hooks.once("ready", async () => {
         return;
       }
 
-      await handleItemTransferSocket(payload);
+      if (game.settings.get(MODULE_ID, "enableItemSend")) await handleItemTransferSocket(payload);
     } catch (err) {
       console.error(`${MODULE_ID} | socket handler error`, err);
       ui.notifications?.error(`${MODULE_ID}: socket handler error (see console)`);
@@ -97,24 +145,24 @@ async function showPlayerPopup(payload) {
         <img class="grr-avatar" src="${actorImg}" />
         <div class="grr-col">
           <div><b>${gmName}</b> requests a roll from <b>${actorName}</b></div>
-          <div class="grr-sub">${payload.label ?? "Requested Roll"}</div>
-          <div class="grr-sub">Skill: <b>${payload.skillLabel ?? payload.skillKey ?? "?"}</b></div>
-          <div class="grr-sub">Difficulty: <b>${baseDiff}</b> | Challenge upgrades: <b>${upgrades}</b> | Setback: <b>${setback}</b> | Boost: <b>${boost}</b></div>
-          <div class="grr-sub">Mode: <b>${rollMode}</b></div>
+          <div class="grr-sub">${payload.label ?? Lang.t("popup.requestedRoll")}</div>
+          <div class="grr-sub">${Lang.t("popup.skill")}: <b>${payload.skillLabel ?? payload.skillKey ?? "?"}</b></div>
+          <div class="grr-sub">${Lang.t("popup.difficulty")}: <b>${baseDiff}</b> | ${Lang.t("popup.challengeUpgrades")}: <b>${upgrades}</b> | ${Lang.t("popup.setback")}: <b>${setback}</b> | ${Lang.t("popup.boost")}: <b>${boost}</b></div>
+          <div class="grr-sub">${Lang.t("popup.mode")}: <b>${rollMode}</b></div>
         </div>
       </div>
       <hr/>
-      <p>Click below to open the StarWarsFFG roll dialog (you can still edit the dice pool) and roll.</p>
+      <p>${Lang.t("popup.openDialogHint")}</p>
     </div>
   `;
 
   new Dialog({
-    title: "Roll Request",
+    title: Lang.t("request.title"),
     content,
     buttons: {
       open: {
         icon: '<i class="fas fa-dice"></i>',
-        label: "Open Roll Dialog",
+        label: Lang.t("popup.openDialog"),
         callback: async () => {
           await openStarWarsFFGRollDialog({
             actor,
@@ -125,7 +173,7 @@ async function showPlayerPopup(payload) {
           });
         }
       },
-      close: { icon: '<i class="fas fa-times"></i>', label: "Close" }
+      close: { icon: '<i class="fas fa-times"></i>', label: Lang.t("common.close") }
     },
     default: "open"
   }).render(true);
@@ -232,3 +280,32 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
 
   app.render(true);
 }
+
+
+Hooks.once('init', () => {
+  const MODID = "genesys-ffg-options-enhancer";
+  game.settings.register(MODID, "silverPerGold", {
+    name: game.i18n.localize("GFOE.SettingSilverPerGoldName"),
+    hint: game.i18n.localize("GFOE.SettingSilverPerGoldHint"),
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 10
+  });
+  game.settings.register(MODID, "bronzePerSilver", {
+    name: game.i18n.localize("GFOE.SettingBronzePerSilverName"),
+    hint: game.i18n.localize("GFOE.SettingBronzePerSilverHint"),
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 10
+  });
+});
+
+Hooks.once('ready', () => { try { if (game.settings.get(MODULE_ID, "enableCurrency")) registerCurrencyUIHook(); } catch(e){ console.error(e);} });
+
+
+Hooks.once("init", () => {
+  try {
+    } catch (e) { console.error(MODULE_ID, e); }
+});

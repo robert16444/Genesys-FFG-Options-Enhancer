@@ -1,4 +1,5 @@
 const MODULE_ID = "genesys-ffg-options-enhancer";
+import { Lang } from "./i18n.js";
 
 function dbg(...args) {
   console.log(`${MODULE_ID} |`, ...args);
@@ -8,7 +9,7 @@ export class RollRequestApp extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: "grr-request-app",
-      title: "Request a Roll",
+      title: Lang.t("request.title"),
       template: `modules/${MODULE_ID}/templates/request-ui.hbs`,
       width: 480,
       height: "auto",

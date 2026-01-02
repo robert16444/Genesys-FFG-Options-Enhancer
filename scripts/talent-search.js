@@ -1,11 +1,21 @@
 const MODULE_ID = "genesys-ffg-options-enhancer";
+import { Lang } from "./i18n.js";
 const TALENT_ITEM_TYPE = "talent";
+
+function getActivationCostRegex() {
+  const primary = (game.settings.get(MODULE_ID, "activationCostLabel") || "").trim();
+  const defaults = ["Koszt aktywacji", "Activation Cost"];
+  const labels = Array.from(new Set([primary, ...defaults].filter(Boolean)));
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const pattern = labels.map(esc).join("|");
+  return new RegExp(`(${pattern})\\s*:\\s*(\\d+)`, "i");
+}
 
 export async function openTalentSearch() {
   const ownedActors = game.actors?.contents?.filter(a => a.isOwner) ?? [];
 
   if (!ownedActors.length) {
-    ui.notifications.warn("Nie masz żadnych postaci z uprawnieniami owner.");
+    ui.notifications.warn(Lang.t("talent.noOwnerActors"));
     return;
   }
 
@@ -20,7 +30,7 @@ export async function openTalentSearch() {
 
       const content = `
         <div style="margin-bottom: 0.5rem;">
-          <label for="actor-select"><strong>Wybierz postać:</strong></label>
+          <label for="actor-select"><strong>${Lang.t("talent.selectActor.label")}:</strong></label>
           <select id="actor-select" style="width: 100%; margin-top: 0.25rem;">
             ${options}
           </select>
@@ -28,18 +38,18 @@ export async function openTalentSearch() {
       `;
 
       new Dialog({
-        title: "Wybór postaci",
+        title: Lang.t("talent.selectActor.title"),
         content,
         buttons: {
           ok: {
-            label: "Dalej",
+            label: Lang.t("talent.selectActor.next"),
             callback: (html) => {
               const id = html.find("#actor-select").val();
               resolve(game.actors.get(id));
             }
           },
           cancel: {
-            label: "Anuluj",
+            label: Lang.t("talent.selectActor.cancel"),
             callback: () => resolve(null)
           }
         },
@@ -89,13 +99,13 @@ export async function openTalentSearch() {
   }
 
   if (!talentData.length) {
-    ui.notifications.info(`Postać "${actor.name}" nie ma żadnych talentów.`);
+    ui.notifications.info(Lang.t("talent.noTalentsForActor", {actor: actor?.name ?? ""}));
     return;
   }
 
   function renderTalentList(filtered, forceExpand, query) {
     if (!filtered.length) {
-      return `<p><em>Brak talentów spełniających kryteria wyszukiwania.</em></p>`;
+      return  `<p><em>${Lang.t("talent.ui.noResults")}</em></p>` ;
     }
 
     return `
@@ -111,9 +121,9 @@ export async function openTalentSearch() {
           if (hasOptions) {
             const parts = t.activationOptions.map((opt, idx) => {
               if (opt.level != null) return `${opt.level} lvl: ${opt.cost}`;
-              return `Wariant ${idx + 1}: ${opt.cost}`;
+              return `${Lang.t("talent.variant")} ${idx + 1}: ${opt.cost}`;
             });
-            costLabel = `Koszt aktywacji: ${parts.join(", ")} many`;
+            costLabel = `${Lang.t("talent.activationCost")}: ${parts.join(", ")} ${Lang.t("talent.mana")}`;
           }
 
           const highlightedName = highlightTerm(escapeHtml(t.name), query);
@@ -121,7 +131,7 @@ export async function openTalentSearch() {
           const highlightedDescription = highlightTerm(t.description, query);
 
           const castButton = hasOptions
-            ? `<button type="button" class="talent-cast-button" data-talent-id="${t.id}">Rzuć zaklęcie</button>`
+            ? `<button type="button" class="talent-cast-button" data-talent-id="${t.id}">${Lang.t("talent.castSpell")}</button>`
             : "";
 
           return `
@@ -147,12 +157,12 @@ export async function openTalentSearch() {
                   </button>
                   ${castButton}
                   <button type="button" class="talent-chat-button" data-talent-id="${t.id}" data-source="${t.source}">
-                    Do czatu
+                    ${Lang.t("talent.ui.toChat")}
                   </button>
                 </div>
               </div>
               <div class="talent-description" style="margin-top:4px; max-height:160px; overflow-y:auto; display:${displayStyle};">
-                ${highlightedDescription || "<em>Brak opisu.</em>"}
+                ${highlightedDescription || "<em>${Lang.t(\"talent.ui.noDescription\")}</em>"}
               </div>
             </div>
           `;
@@ -166,27 +176,27 @@ export async function openTalentSearch() {
   const content = `
     <div id="${dialogId}">
       <div style="margin-bottom:0.5rem;">
-        <strong>Postać:</strong> ${escapeHtml(actor.name)}
+        <strong>${Lang.t("talent.ui.actorLabel")}:</strong> ${escapeHtml(actor.name)}
       </div>
 
       <div style="margin-bottom:0.5rem;">
-        <label for="talent-search-input"><strong>Szukaj talentu (nazwa / treść):</strong></label>
+        <label for="talent-search-input"><strong>${Lang.t("talent.ui.searchLabel")}:</strong></label>
         <input id="talent-search-input" type="text" style="width:100%; margin-top:0.25rem;"
-               placeholder="Zacznij pisać, żeby filtrować talenty..." />
+               placeholder="${Lang.t("talent.ui.searchPlaceholder")}" />
       </div>
 
       <div style="margin-bottom:0.5rem; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-        <button type="button" id="talent-show-all">Pokaż wszystkie</button>
-        <button type="button" id="talent-expand-all">Rozwiń wszystko</button>
-        <button type="button" id="talent-collapse-all">Zwiń wszystko</button>
+        <button type="button" id="talent-show-all">${Lang.t("talent.ui.showAll")}</button>
+        <button type="button" id="talent-expand-all">${Lang.t("talent.ui.expandAll")}</button>
+        <button type="button" id="talent-collapse-all">${Lang.t("talent.ui.collapseAll")}</button>
 
         <label style="display:flex; align-items:center; gap:4px; margin-left:0.5rem;">
           <input type="checkbox" id="hide-empty-desc" />
-          <span style="font-size:0.9rem;">Ukryj talenty bez opisu</span>
+          <span style="font-size:0.9rem;">${Lang.t("talent.ui.hideNoDesc")}</span>
         </label>
 
         <span style="margin-left:auto; font-size:0.9rem;">
-          Liczba talentów: <span id="talent-count">${talentData.length}</span>
+          ${Lang.t("talent.ui.countLabel")}: <span id="talent-count">${talentData.length}</span>
         </span>
       </div>
 
@@ -197,9 +207,9 @@ export async function openTalentSearch() {
   `;
 
   const d = new Dialog({
-    title: `Talenty - ${actor.name}`,
+    title: Lang.t("talent.searchTitleFor", {actor: actor?.name ?? ""}),
     content,
-    buttons: { close: { label: "Zamknij" } },
+    buttons: { close: { label: Lang.t("common.close") } },
     default: "close",
     render: (html) => {
       const root = html.find(`#${dialogId}`);
@@ -259,9 +269,14 @@ export async function openTalentSearch() {
         const cost = Number(option.cost ?? 0);
 
         if (cost <= 0) {
-          ui.notifications.warn("Nieprawidłowy koszt aktywacji.");
+          ui.notifications.warn(Lang.t("talent.error.invalidActivationCost"));
           return;
         }
+        if (current < cost) {
+          ui.notifications.warn(Lang.t("talent.error.notEnoughMana", {needed: `<strong>${cost}</strong>`, current: `<strong>${current}</strong>`}));
+          return;
+        }
+
 
         let newValue = current - cost;
         if (newValue < 0) newValue = 0;
@@ -278,13 +293,13 @@ export async function openTalentSearch() {
               ${talent.description || "<p><em>Brak opisu.</em></p>"}
               <hr/>
               <p><strong>${levelInfo}</strong></p>
-              <p>Zużyto <strong>${cost}</strong> many.</p>
+              <p>${Lang.t("talent.castDialog.spentMana", {cost: `<strong>${cost}</strong>`})}</p>
               <p>Force Pool: ${current} ➜ <strong>${newValue}</strong> / ${max}</p>
             `
           });
         } catch (e) {
           console.error(e);
-          ui.notifications.error("Nie udało się zaktualizować Force Pool – szczegóły w konsoli (F12).");
+          ui.notifications.error(Lang.t("talent.error.forcePoolUpdateFailed"));
         }
       }
 
@@ -322,13 +337,13 @@ export async function openTalentSearch() {
               content: `
                 <h2>${escapeHtml(t.name)}</h2>
                 ${t.description || "<p><em>Brak opisu.</em></p>"}
-                ${t.origin ? `<p><em>Źródło: ${escapeHtml(t.origin)}</em></p>` : ""}
+                ${t.origin ? `<p><em>${Lang.t("talent.ui.source")}: ${escapeHtml(t.origin)}</em></p>` : ""}
               `
             });
           }
         } catch (e) {
           console.error(e);
-          ui.notifications.error("Nie udało się wysłać talentu na czat – szczegóły w konsoli (F12).");
+          ui.notifications.error(Lang.t("talent.error.sendToChatFailed"));
         }
       });
 
@@ -345,8 +360,7 @@ export async function openTalentSearch() {
 
         const optionsHtml = t.activationOptions.map((opt, idx) => {
           const label = (opt.level != null)
-            ? `Poziom ${opt.level} – koszt: ${opt.cost} many`
-            : `Wariant ${idx + 1} – koszt: ${opt.cost} many`;
+            ? `${Lang.t("talent.level")} ${opt.level} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}` : `${Lang.t("talent.variant")} ${idx + 1} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}`;
 
           return `
             <div style="margin-bottom:0.5rem;">
@@ -360,14 +374,14 @@ export async function openTalentSearch() {
         }).join("");
 
         new Dialog({
-          title: `Rzuć zaklęcie - ${t.name}`,
+          title: `${Lang.t("talent.castSpell")} - ${t.name}`,
           content: `
-            <div style="margin-bottom:0.5rem;"><strong>Wybierz poziom zaklęcia:</strong></div>
+            <div style="margin-bottom:0.5rem;"><strong>${Lang.t("talent.cast.chooseLevel")}</strong></div>
             <form>${optionsHtml}</form>
           `,
           buttons: {
             cast: {
-              label: "Rzuć",
+              label: Lang.t("talent.cast"),
               callback: (html) => {
                 const val = html.find("input[name='spell-level']:checked").val();
                 const index = Number(val ?? 0);
@@ -375,7 +389,7 @@ export async function openTalentSearch() {
                 if (opt) performCast(opt, t);
               }
             },
-            cancel: { label: "Anuluj" }
+            cancel: { label: Lang.t("talent.selectActor.cancel") }
           },
           default: "cast"
         }).render(true);
@@ -443,6 +457,7 @@ function extractActivationOptionsFromDescription(desc) {
   }
 
   const blocks = [];
+  const costRx = getActivationCostRegex();
 
   if (lvlIndices.length) {
     for (let idx = 0; idx < lvlIndices.length; idx++) {
@@ -451,15 +466,15 @@ function extractActivationOptionsFromDescription(desc) {
       const end = (idx + 1 < lvlIndices.length) ? lvlIndices[idx + 1].index : lines.length;
       const blockLines = lines.slice(start, end);
       const blockText = blockLines.join("\n");
-      const costMatch = blockText.match(/koszt\s+aktywacji\s*:\s*(\d+)/i);
+      const costMatch = blockText.match(costRx);
       if (costMatch) {
-        blocks.push({ level, cost: parseInt(costMatch[1]), blockText });
+        blocks.push({ level, cost: parseInt(costMatch[2]), blockText });
       }
     }
   } else {
     for (let i = 0; i < lines.length; i++) {
-      const m = lines[i].match(/koszt\s+aktywacji\s*:\s*(\d+)/i);
-      if (m) blocks.push({ level: null, cost: parseInt(m[1]), blockText: lines[i] });
+      const m = lines[i].match(costRx);
+      if (m) blocks.push({ level: null, cost: parseInt(m[2]), blockText: lines[i] });
     }
   }
 
