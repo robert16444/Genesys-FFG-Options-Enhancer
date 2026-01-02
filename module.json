@@ -1,17 +1,11 @@
 {
   "id": "genesys-ffg-options-enhancer",
   "title": "Genesys FFG Options Enhancer",
-  "description": "Quality-of-life enhancements for Genesys FFG: roll requests, talent search, item transfer and more.",
+  "description": "Enhances the Genesys FFG system with convenient tools: Roll Requests, Talent Search, Item Transfer and more.",
   "version": "1.0.0",
-  "authors": [
-    {
-      "name": "robert16444"
-    }
-  ],
-  "compatibility": {
-    "minimum": "12",
-    "verified": "12"
-  },
+  "author": "robert16444",
+  "minimumCoreVersion": "12",
+  "compatibleCoreVersion": "12",
   "esmodules": [
     "scripts/main.js"
   ],
@@ -22,12 +16,19 @@
     "templates/request-ui.hbs"
   ],
   "socket": true,
+  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/archive/refs/heads/main.zip",
+  "manifest": "https://raw.githubusercontent.com/robert16444/Genesys-FFG-Options-Enhancer/main/module.json",
+  "authors": [
+    {
+      "name": "robert16444",
+      "url": "https://github.com/robert16444"
+    }
+  ],
   "relationships": {
     "systems": [
       {
         "id": "starwarsffg",
-        "type": "system",
-        "compatibility": {}
+        "type": "system"
       }
     ]
   }
