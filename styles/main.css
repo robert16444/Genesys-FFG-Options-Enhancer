@@ -1,0 +1,21 @@
+.grr-form { display: flex; flex-direction: column; gap: 10px; }
+.grr-userlist { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow: auto; padding-right: 2px; }
+.grr-user { display: flex; gap: 8px; align-items: center; padding: 6px; border: 1px solid var(--color-border-light-primary); border-radius: 6px; cursor: pointer; }
+.grr-user:hover { background: rgba(255,255,255,0.05); }
+.grr-user.grr-selected { outline: 2px solid var(--color-border-highlight); }
+.grr-user.grr-disabled { opacity: 0.5; cursor: not-allowed; }
+.grr-avatar { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+.grr-userinfo { display: flex; flex-direction: column; }
+.grr-username { font-weight: 600; }
+.grr-actorname { font-size: 12px; opacity: 0.8; }
+.grr-field label { display: block; font-weight: 600; margin-bottom: 4px; }
+.grr-field input, .grr-field select { width: 100%; }
+.grr-row { display: flex; gap: 6px; align-items: center; }
+.grr-btn { flex: 0 0 auto; width: 40px; }
+.grr-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grr-actions { display: flex; justify-content: flex-end; }
+.grr-primary { padding: 8px 12px; }
+.grr-muted { font-size: 12px; opacity: 0.8; margin: 2px 0 0 0; }
+.grr-player-popup .grr-row { display: flex; gap: 10px; align-items: center; }
+.grr-player-popup .grr-col { display: flex; flex-direction: column; gap: 2px; }
+.grr-player-popup .grr-sub { font-size: 12px; opacity: 0.85; }
