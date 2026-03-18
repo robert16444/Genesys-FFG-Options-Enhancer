@@ -50,12 +50,23 @@ export class RollRequestApp extends FormApplication {
       const row = ev.currentTarget;
       if (row.classList.contains("grr-disabled")) return;
       row.classList.toggle("grr-selected");
-      this._refreshSkillDropdown(html);
+      this._refreshSkillList(html);
     });
 
     html.find("button[name='refreshSkills']").on("click", (ev) => {
       ev.preventDefault();
-      this._refreshSkillDropdown(html, true);
+      this._refreshSkillList(html, true);
+    });
+
+    html.on("click", ".grr-skill-option", (ev) => {
+      ev.preventDefault();
+      const btn = ev.currentTarget;
+      const skillKey = btn.dataset.skillKey ?? "";
+      const skillLabel = btn.dataset.skillLabel ?? btn.textContent?.trim?.() ?? "";
+      html.find("input[name='skillKey']").val(skillKey);
+      html.find("input[name='skillLabel']").val(skillLabel);
+      html.find(".grr-skill-option").removeClass("active");
+      btn.classList.add("active");
     });
 
     html.find("button[name='send']").on("click", async (ev) => {
@@ -64,33 +75,49 @@ export class RollRequestApp extends FormApplication {
     });
   }
 
-  async _refreshSkillDropdown(html, force = false) {
+  async _refreshSkillList(html, force = false) {
+    const list = html.find("[data-skill-list]")[0];
+    const hiddenSkillKey = html.find("input[name='skillKey']");
+    const hiddenSkillLabel = html.find("input[name='skillLabel']");
+    if (!list || !hiddenSkillKey.length || !hiddenSkillLabel.length) return;
+
     const selected = this._getSelectedUsers(html);
-    const select = html.find("select[name='skillKey']")[0];
-    if (!select) return;
+    const current = hiddenSkillKey.val()?.toString?.() ?? "";
 
     if (selected.length === 0) {
-      select.innerHTML = `<option value="">(select player(s) first)</option>`;
+      list.innerHTML = `<div class="grr-muted">${escapeHtml(Lang.t("request.selectPlayersFirst"))}</div>`;
+      hiddenSkillKey.val("");
+      hiddenSkillLabel.val("");
       return;
     }
 
     const first = selected[0];
     const actor = game.actors.get(first.actorId);
     if (!actor) {
-      select.innerHTML = `<option value="">(selected player has no character)</option>`;
+      list.innerHTML = `<div class="grr-muted">${escapeHtml(Lang.t("request.selectedPlayerHasNoCharacter") || "Wybrany gracz nie ma postaci.")}</div>`;
+      hiddenSkillKey.val("");
+      hiddenSkillLabel.val("");
       return;
     }
 
     const skills = extractSkills(actor);
     if (!skills.length) {
-      select.innerHTML = `<option value="">(no skills found on actor)</option>`;
+      list.innerHTML = `<div class="grr-muted">${escapeHtml(Lang.t("request.noSkillsFound") || "Nie znaleziono umiejętności na postaci.")}</div>`;
+      hiddenSkillKey.val("");
+      hiddenSkillLabel.val("");
       return;
     }
 
-    const current = select.value;
-    const options = skills.map(s => `<option value="${s.key}">${escapeHtml(s.label)}</option>`).join("");
-    select.innerHTML = `<option value="">(choose a skill)</option>` + options;
-    if (!force && current && skills.some(s => s.key === current)) select.value = current;
+    let selectedSkill = (!force && current) ? skills.find(s => s.key === current) : null;
+    if (!selectedSkill) selectedSkill = skills[0];
+
+    list.innerHTML = skills.map(s => {
+      const active = s.key === selectedSkill?.key ? " active" : "";
+      return `<button type="button" class="grr-skill-option${active}" data-skill-key="${escapeHtml(s.key)}" data-skill-label="${escapeHtml(s.label)}">${escapeHtml(s.label)}</button>`;
+    }).join("");
+
+    hiddenSkillKey.val(selectedSkill?.key ?? "");
+    hiddenSkillLabel.val(selectedSkill?.label ?? "");
   }
 
   _getSelectedUsers(html) {
@@ -114,12 +141,12 @@ export class RollRequestApp extends FormApplication {
       return;
     }
 
-    const skillKey = html.find("select[name='skillKey']").val();
+    const skillKey = (html.find("input[name='skillKey']").val() ?? "").toString();
     if (!skillKey) {
       ui.notifications.warn("Select a skill.");
       return;
     }
-    const skillLabel = html.find("select[name='skillKey'] option:selected").text();
+    const skillLabel = (html.find("input[name='skillLabel']").val() ?? skillKey).toString();
 
     const difficulty = Number(html.find("input[name='difficulty']").val() ?? 0);
     const challenge = Number(html.find("input[name='challenge']").val() ?? 0);

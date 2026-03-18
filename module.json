@@ -2,15 +2,15 @@
   "id": "genesys-ffg-options-enhancer",
   "title": "Genesys FFG Options Enhancer",
   "description": "Enhances the Genesys FFG system with convenient tools: Roll Requests, Talent Search, Item Transfer and more.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "authors": [
     {
       "name": "robert16444",
       "url": "https://github.com/robert16444"
     }
   ],
-  "minimumCoreVersion": "12",
-  "compatibleCoreVersion": "12",
+  "minimumCoreVersion": "13",
+  "compatibleCoreVersion": "13",
   "esmodules": [
     "scripts/i18n.js",
     "scripts/currency.js",
@@ -28,16 +28,16 @@
       {
         "id": "starwarsffg",
         "type": "system",
-        "compatability": {
-            "minimum": "1.906",
-            "verified": "1.908",
-            "maximum": "1.908"
+        "compatibility": {
+          "minimum": "2.0.0",
+          "verified": "2.0.0",
+          "maximum": "2.0.0"
         }
       }
     ]
   },
   "manifest": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/module.json",
-  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/Genesys-FFG-Options-Enhancer.zip",
+  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/download/1.0.3/Genesys-FFG-Options-Enhancer.zip",
   "languages": [
     {
       "lang": "en",
@@ -49,5 +49,10 @@
       "name": "Polski",
       "path": "lang/pl.json"
     }
-  ]
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13",
+    "maximum": "13"
+  }
 }

@@ -3,7 +3,22 @@ const MODULE_ID = "genesys-ffg-options-enhancer";
 import { Lang } from "./i18n.js";
 function __t(key, data){ try { return Lang?.t?.(key, data) ?? key; } catch(e){ return key; } }
 
+/**
+ * Item Transfer — robust integration with Genesys/StarWarsFFG context menu
+ * - Adds an entry directly under "Send to Chat" inside the SAME context menu.
+ * - Uses a MutationObserver to catch when the system draws its <nav class="context-menu">.
+ * - Falls back to its own ContextMenu only if system menu isn't present.
+ */
+
 function dbg(...args) { console.log(`${MODULE_ID} | item-transfer |`, ...args); }
+
+function isItemTransferEnabled() {
+  try {
+    return game.settings.get(MODULE_ID, "enableItemSend");
+  } catch (_) {
+    return true;
+  }
+}
 
 const ALLOWED_TYPES = new Set(["armour", "armor", "gear", "weapon"]);
 
@@ -19,11 +34,13 @@ const MSG = {
   INFO_TO_USERS: "ITEM_TRANSFER_INFO_TO_USERS"
 };
 
-let lastRCItemInfo = null;
+let lastRCItemInfo = null; // {actorId, itemId}
+let grrContextStateInstalled = false;
 
 export function registerItemTransferFeature() {
+  if (!isItemTransferEnabled()) return;
   const ContextMenuCls =
-    globalThis.ContextMenu ??
+    foundry?.applications?.ux?.ContextMenu?.implementation ??
     foundry?.applications?.ux?.ContextMenu ??
     foundry?.applications?.api?.ContextMenu;
 
@@ -37,22 +54,25 @@ export function registerItemTransferFeature() {
     const itemSelector = "li.item[data-item-id], div.item[data-item-id], .item[data-item-id]";
     if (!root.querySelector(itemSelector)) return;
 
+    // Track right-click so we know which item the menu is for
     root.addEventListener("contextmenu", (ev) => {
       const el = ev.target?.closest?.(itemSelector);
       if (!el) return;
       const itemId = el.dataset.itemId;
       if (!itemId) return;
       const item = actor.items?.get?.(itemId);
-      if (!isAllowedItem(item)) return;
+      if (!isAllowedItem(item)) return; // don't set if not allowed
 
       lastRCItemInfo = { actorId: actor.id, itemId };
     }, true);
 
+    // Install a document-level MutationObserver once per client
     if (!document.body.dataset.grrObserverInstalled) {
       installContextMenuObserver();
       document.body.dataset.grrObserverInstalled = "1";
     }
 
+    // Fallback menu if the system provides none
     if (ContextMenuCls && !root.dataset.grrFallbackBound) {
       new ContextMenuCls(root, itemSelector, [
         {
@@ -82,7 +102,27 @@ export function registerItemTransferFeature() {
   Hooks.on("renderActorSheetFGv2", bindForSheet);
 }
 
+/** Observe for creation of the native context menu and inject our entry under the first item */
 function installContextMenuObserver() {
+  if (!grrContextStateInstalled) {
+    // Clear stale item context before every new right-click. If the click really
+    // happened on a valid item row, the sheet-level handler will immediately set it again.
+    document.addEventListener("contextmenu", () => {
+      lastRCItemInfo = null;
+    }, true);
+
+    // Also clear any remembered item after normal clicks / Escape so it cannot leak
+    // into unrelated context menus opened later.
+    document.addEventListener("click", () => {
+      lastRCItemInfo = null;
+    }, true);
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") lastRCItemInfo = null;
+    }, true);
+
+    grrContextStateInstalled = true;
+  }
+
   const obs = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
@@ -90,30 +130,50 @@ function installContextMenuObserver() {
         const menu = node.matches?.("nav.context-menu, .context-menu, #context-menu") ? node : node.querySelector?.("nav.context-menu, .context-menu, #context-menu");
         if (!menu) continue;
 
+        // Only augment once per menu instance
         if (menu.dataset.grrAugmented === "1") continue;
         const list = menu.querySelector("ol, ul, .context-items, .menu") || menu;
         if (!list) continue;
 
+        // Insert only if lastRCItemInfo still points to a valid, allowed item
         const info = lastRCItemInfo;
         if (!info) continue;
         const actor = game.actors.get(info.actorId);
         const item = actor?.items?.get?.(info.itemId);
         if (!isAllowedItem(item)) continue;
 
-        const li = document.createElement("li");
-        li.className = "context-item";
-        li.innerHTML = `<i class="fas fa-paper-plane"></i> ${__t("itemTransfer.contextLabel")}`;
-
         const first = list.querySelector(".context-item");
-        if (first?.nextSibling) {
-          first.parentNode.insertBefore(li, first.nextSibling);
+        let li;
+
+        if (first) {
+          li = first.cloneNode(true);
+          li.classList.add("grr-context-send-item");
+          li.removeAttribute("id");
+          for (const el of li.querySelectorAll("[id]")) el.removeAttribute("id");
+
+          const icon = li.querySelector("i");
+          if (icon) icon.className = "fas fa-paper-plane";
+
+          const labelTarget = li.querySelector(".label") ?? li.querySelector("span") ?? li.querySelector("a") ?? li;
+          if (labelTarget) {
+            if (labelTarget === li) li.textContent = __t("itemTransfer.contextLabel");
+            else labelTarget.textContent = __t("itemTransfer.contextLabel");
+          }
+
+          first.insertAdjacentElement("afterend", li);
         } else {
+          li = document.createElement("li");
+          li.className = "context-item grr-context-send-item";
+          li.innerHTML = `<a><i class="fas fa-paper-plane"></i><span class="label">${__t("itemTransfer.contextLabel")}</span></a>`;
           list.appendChild(li);
         }
+
         menu.dataset.grrAugmented = "1";
+        requestAnimationFrame(() => restyleExpandedMenu(menu, list, li, first));
 
         li.addEventListener("click", (e) => {
           e.preventDefault();
+          lastRCItemInfo = null;
           if (!actor || !item) return;
           try { menu.style.display = "none"; } catch (e) {}
           onSendItemClicked(actor, item.id);
@@ -125,15 +185,87 @@ function installContextMenuObserver() {
   obs.observe(document.body, {childList: true, subtree: true});
 }
 
+
+function restyleExpandedMenu(menu, list, li, first) {
+  try {
+    const items = Array.from(list.children).filter(el => el instanceof HTMLElement);
+    if (!items.length || !li) return;
+
+    // Force menu/list height to include the injected row.
+    const totalHeight = Math.ceil(items.reduce((sum, el) => sum + Math.max(el.offsetHeight, el.getBoundingClientRect().height), 0));
+    menu.style.minHeight = `${totalHeight}px`;
+    menu.style.height = `${totalHeight}px`;
+    menu.style.overflow = "hidden";
+    if (list !== menu) {
+      list.style.minHeight = `${totalHeight}px`;
+      list.style.height = `${totalHeight}px`;
+      list.style.overflow = "hidden";
+    }
+
+    const source = first && first !== li ? first : items[0];
+    if (!source || source === li) return;
+
+    // Keep the DOM structure/classes cloned from the system row so Foundry/system hover
+    // styling continues to work. Only normalize size/visibility related properties.
+    const sourceInner = source.querySelector(":scope > a, :scope > button, :scope > .menu-item") ?? source;
+    const liInner = li.querySelector(":scope > a, :scope > button, :scope > .menu-item") ?? li;
+
+    copyComputedBox(source, li, { includeBackground: false });
+    copyComputedBox(sourceInner, liInner, { includeBackground: false });
+
+    li.style.opacity = "1";
+    li.style.visibility = "visible";
+    li.style.background = "";
+    li.style.backgroundColor = "";
+
+    liInner.style.opacity = "1";
+    liInner.style.visibility = "visible";
+    liInner.style.width = "100%";
+    liInner.style.background = "";
+    liInner.style.backgroundColor = "";
+
+    const srcIcon = source.querySelector("i");
+    const dstIcon = li.querySelector("i");
+    if (srcIcon && dstIcon) copyTextStyle(srcIcon, dstIcon);
+
+    const srcLabel = source.querySelector(".label") ?? source.querySelector("span") ?? sourceInner;
+    const dstLabel = li.querySelector(".label") ?? li.querySelector("span") ?? liInner;
+    if (srcLabel && dstLabel) {
+      copyTextStyle(srcLabel, dstLabel);
+      dstLabel.textContent = __t("itemTransfer.contextLabel");
+    }
+  } catch (err) {
+    console.warn(`${MODULE_ID} | item-transfer | context menu restyle failed`, err);
+  }
+}
+
+function copyComputedBox(source, target, { includeBackground = true } = {}) {
+  if (!source || !target) return;
+  const s = getComputedStyle(source);
+  const t = target.style;
+  const props = [
+    "display", "position", "boxSizing", "width", "height", "minHeight", "maxHeight",
+    "padding", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "margin", "border", "borderTop", "borderRight", "borderBottom", "borderLeft",
+    "borderRadius", "boxShadow", "alignItems",
+    "justifyContent", "gap", "lineHeight", "verticalAlign", "overflow", "cursor"
+  ];
+  if (includeBackground) props.push("background", "backgroundColor");
+  for (const prop of props) t[prop] = s[prop];
+}
+
 async function onSendItemClicked(fromActor, itemId) {
+  if (!isItemTransferEnabled()) return ui.notifications?.warn?.(__t("itemTransfer.disabled") || "Item transfer is disabled.");
   try {
     const item = fromActor.items.get(itemId);
     if (!item) return ui.notifications.warn(__t("itemTransfer.itemNotFound"));
     if (!isAllowedItem(item)) return ui.notifications.warn(__t("itemTransfer.onlyAllowed"));
 
+    const sourceActorId = fromActor?.id ?? null;
     const candidates = game.users
       .filter(u => u.active && !u.isGM && u.character)
-      .filter(u => u.id !== game.user.id);
+      .filter(u => u.id !== game.user.id)
+      .filter(u => u.character?.id !== sourceActorId);
 
     if (candidates.length === 0) return ui.notifications.warn(__t("itemTransfer.noEligible"));
 
@@ -160,13 +292,20 @@ async function onSendItemClicked(fromActor, itemId) {
           callback: async (html) => {
             const toUserId = html.find("select[name='grrRecipient']").val();
             if (!toUserId) return ui.notifications.warn(__t("request.selectUser"));
-            await emitToModuleSocket({
+            const requestPayload = {
               type: MSG.REQUEST_TO_GM,
               fromUserId: game.user.id,
               fromActorId: fromActor.id,
               itemId,
               toUserId
-            });
+            };
+
+            if (game.user.isGM) {
+              await handleRequestToGM(requestPayload);
+            } else {
+              await emitToModuleSocket(requestPayload);
+            }
+
             ui.notifications.info(__t("itemTransfer.sent"));
           }
         },
@@ -182,7 +321,7 @@ async function onSendItemClicked(fromActor, itemId) {
 }
 
 export async function handleItemTransferSocket(payload) {
-  if (!payload?.type) return;
+  if (!isItemTransferEnabled() || !payload?.type) return;
 
   switch (payload.type) {
     case MSG.REQUEST_TO_GM:

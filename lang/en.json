@@ -31,7 +31,9 @@
     "setback": "Setback (black)",
     "boost": "Boost (blue)",
     "selectPlayersFirst": "(select player(s) first)",
-    "rollModePublic": "Public"
+    "rollModePublic": "Public",
+    "selectedPlayerHasNoCharacter": "The selected player has no character assigned.", 
+    "noSkillFound": "No skill found on this character."
   },
   "itemTransfer": {
     "contextLabel": "Send to player",

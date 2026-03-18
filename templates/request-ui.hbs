@@ -24,13 +24,15 @@
 
   <div class="grr-field">
     <label>{{grr_localize 'request.skill'}}</label>
-    <div class="grr-row">
-      <select name="skillKey">
-        <option value="">{{grr_localize 'request.selectPlayersFirst'}}</option>
-      </select>
-      <button type="button" name="refresh{{grr_localize 'request.skill'}}s" class="grr-btn">↻</button>
+    <input type="hidden" name="skillKey" value="" />
+    <input type="hidden" name="skillLabel" value="" />
+    <div class="grr-row grr-row-top">
+      <div class="grr-skill-list" data-skill-list>
+        <div class="grr-muted">{{grr_localize 'request.selectPlayersFirst'}}</div>
+      </div>
+      <button type="button" name="refreshSkills" class="grr-btn" title="Odśwież listę umiejętności">↻</button>
     </div>
-    <p class="grr-muted">Select one or more players above first. {{grr_localize 'request.skill'}}s are read from the first selected character.</p>
+    <p class="grr-muted">{{grr_localize 'request.skillHint'}}</p>
   </div>
 
   <div class="grr-grid4">

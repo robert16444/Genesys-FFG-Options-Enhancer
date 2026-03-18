@@ -30,7 +30,9 @@
     "setback": "Setback (czarne)",
     "boost": "Boost (niebieskie)",
     "selectPlayersFirst": "(najpierw wybierz graczy)",
-    "rollModePublic": "Publiczny"
+    "rollModePublic": "Publiczny",
+    "selectedPlayerHasNoCharacter": "Wybrany gracz nie ma przypisanej postaci.",
+    "noSkillsFound": "Nie znaleziono umiejętności na tej postaci."
   },
   "itemTransfer": {
     "contextLabel": "Wyślij do gracza",
@@ -144,7 +146,7 @@
   "GFOE.SettingSilverPerGoldName": "Ilość srebrnych monet na 1 złotą monetę",
   "GFOE.SettingSilverPerGoldHint": "Ile srebrnych monet odpowiada 1 złotej (domyślnie 10).",
   "GFOE.SettingBronzePerSilverName": "Ilość miedzianych monet na 1 srebrną monetę",
-  "GFOE.SettingBronzePerSilverHint": "Ile miedzianych moent odpowiada 1 srebrnej (domyślnie 10).",
+  "GFOE.SettingBronzePerSilverHint": "Ile miedzianych monet odpowiada 1 srebrnej (domyślnie 10).",
   "GFOE.ErrNotEnoughSpecific": "Brak wystarczającej liczby wskazanych monet.",
   "GFOE.ExchangeCoins": "Rozmień monety",
   "GFOE.From": "Z",

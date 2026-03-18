@@ -1,6 +1,15 @@
 import './talent-fix.js';
 
+// Currency Manager for Genesys FFG Options Enhancer
 const MODID = "genesys-ffg-options-enhancer";
+
+function isCurrencyEnabled() {
+  try {
+    return game.settings.get(MODID, "enableCurrency");
+  } catch (_) {
+    return true;
+  }
+}
 
 export const GFOEi18n = {
   dict: {},
@@ -353,6 +362,7 @@ export class GFOECurrencyApp extends Application {
 
 export class GFOECurrency {
 
+  // Settings helpers
   static ratios() {
     const silverPerGold = Number(game.settings.get(MODID, "silverPerGold") ?? 10);
     const bronzePerSilver = Number(game.settings.get(MODID, "bronzePerSilver") ?? 10);
@@ -402,11 +412,14 @@ export class GFOECurrency {
     };
     return this.setBalance(actor, newBal);
   }
+
+  // Remove specific coins; make change if necessary
   
 static async removeCoinsSpecific(actor, delta) {
     delta = { g: Math.max(0, Math.floor(delta.g||0)), s: Math.max(0, Math.floor(delta.s||0)), b: Math.max(0, Math.floor(delta.b||0)) };
     const bal = this.getBalance(actor);
 
+    // No auto-change here: check exact availability per denomination
     if (delta.g > (bal.g||0) || delta.s > (bal.s||0) || delta.b > (bal.b||0)) {
       throw new Error(game.i18n.localize("GFOE.ErrNotEnoughSpecific"));
     }
@@ -419,6 +432,10 @@ static async removeCoinsSpecific(actor, delta) {
     return this.setBalance(actor, newBal);
   }
 
+
+
+
+  // Remove by value in chosen unit, prioritizing target unit first, then auto-make change
   static async removeCoinsByValue(actor, amount, unit) {
     amount = Math.max(0, Math.floor(amount||0));
     if (amount <= 0) return;
@@ -434,6 +451,7 @@ static async removeCoinsSpecific(actor, delta) {
       throw new Error(game.i18n.localize("GFOE.ErrNotEnoughFunds"));
     }
 
+    // Prefer the chosen unit first
     if (unit === "g") {
       const pay = Math.min(bal.g||0, amount);
       bal.g = (bal.g||0) - pay;
@@ -448,6 +466,7 @@ static async removeCoinsSpecific(actor, delta) {
       reqBase -= pay * coinValue("b");
     }
 
+    // Still owed -> consume from rest using change
     if (reqBase > 0) {
       const baseLeft = this.toBase(bal);
       const newBase = baseLeft - reqBase;
@@ -460,6 +479,8 @@ static async removeCoinsSpecific(actor, delta) {
     return this.setBalance(actor, bal);
   }
 
+  // Exchange coins between denominations (uses module ratios). 
+  // For higher->lower: exact multiplication. For lower->higher: convert as much as possible, keep remainder in source coin.
   static async exchange(actor, amount, from, to) {
     amount = Math.max(0, Math.floor(amount||0));
     if (amount <= 0) return;
@@ -480,14 +501,17 @@ static async removeCoinsSpecific(actor, delta) {
     let remainderFrom = 0;
 
     if (fromVal > toVal) {
+      // higher -> lower: multiply
       const ratio = Math.floor(fromVal / toVal);
       toGain = amount * ratio;
       remainderFrom = 0;
     } else if (fromVal < toVal) {
+      // lower -> higher: divide, keep remainder
       const ratio = Math.floor(toVal / fromVal);
       toGain = Math.floor(amount / ratio);
       remainderFrom = amount % ratio;
     } else {
+      // equal (shouldn't happen unless same unit)
       toGain = amount;
       remainderFrom = 0;
     }
@@ -499,6 +523,7 @@ static async removeCoinsSpecific(actor, delta) {
     return this.setBalance(actor, newBal);
   }
 
+  // --- Transfers ---
   static async _applyTransfer(sender, recipient, delta) {
     const sBal = this.getBalance(sender);
     const newS = { g: sBal.g - (delta.g||0), s: sBal.s - (delta.s||0), b: sBal.b - (delta.b||0) };
@@ -554,21 +579,27 @@ static async removeCoinsSpecific(actor, delta) {
 
 }
 
+// Hook to add the currency button to the Items (Gear) section on character sheets
 export function registerCurrencyUIHook() {
+  if (!isCurrencyEnabled()) return;
   Hooks.on("renderActorSheet", (app, html, data) => {
+    if (!isCurrencyEnabled()) return;
     try {
       const actor = app.actor;
       if (!actor || actor.type !== "character") return;
 
+      // Only on the Items tab content:
       const tab = html.find(".tab.items");
       if (!tab.length) return;
 
+      // Find the Gear section header (with SWFFG.ItemsGear) and place a button there
       const headerEl = tab.find(".items-header .header-name").filter((i,e)=>{
         return e?.innerText?.trim() === game.i18n.localize("SWFFG.ItemsGear");
       }).closest(".items-header");
 
       if (!headerEl.length) return;
 
+      // Avoid duplicate
       if (headerEl.find(".gfoe-currency-btn").length) return;
 
       const btn = $(`<div class="gfoe-currency-btn" title="${game.i18n.localize("GFOE.OpenCurrency")}"><i class="fa-solid fa-coins"></i></div>`);
@@ -588,13 +619,21 @@ export function registerCurrencyUIHook() {
 
 
 export function registerCurrencySocket() {
-  if (!game.socket) return;
+  if (!isCurrencyEnabled() || !game.socket) return;
   game.socket.on("module."+MODID, async (payload) => {
     try {
+      if (!isCurrencyEnabled()) return;
+      // Recipient popup
       if (payload?.type === "currencyOffer") {
         const recipient = game.actors.get(payload.recipientId);
         if (!recipient) return;
-        if (!recipient.isOwner && !game.user.isGM) return;
+
+        const activeUsers = Array.from(game.users ?? []).filter(u => u?.active);
+        const nonGmOwners = activeUsers.filter(u => !u.isGM && recipient.testUserPermission?.(u, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER));
+        const fallbackGmOwners = activeUsers.filter(u => u.isGM && recipient.testUserPermission?.(u, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER));
+        const eligibleUsers = nonGmOwners.length ? nonGmOwners : fallbackGmOwners;
+        const isCurrentUserEligible = eligibleUsers.some(u => u.id === game.user.id);
+        if (!isCurrentUserEligible) return;
 
         const sender = game.actors.get(payload.senderId);
         const senderName = sender?.name ?? game.i18n.localize("GFOE.Unknown");
@@ -625,6 +664,7 @@ export function registerCurrencySocket() {
         return;
       }
 
+      // GM executor
       if (!game.user.isGM) return;
 
       if (payload?.type === "currencyOfferAccept") {
@@ -661,8 +701,10 @@ export function registerCurrencySocket() {
 }
 
 export function registerCurrencyAutoRefresh() {
+  if (!isCurrencyEnabled()) return;
   try {
     Hooks.on("updateActor", (actor, diff) => {
+      if (!isCurrencyEnabled()) return;
       try {
         const flags = diff?.flags?.[MODID];
         if (flags && Object.prototype.hasOwnProperty.call(flags, "currency")) {
