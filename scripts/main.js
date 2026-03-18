@@ -1,4 +1,4 @@
-import { GFOECurrency, GFOECurrencyApp, registerCurrencyUIHook } from './currency.js';
+import { GFOECurrency, GFOECurrencyApp, registerCurrencyUIHook, registerCurrencySocket, registerCurrencyAutoRefresh } from './currency.js';
 import { RollRequestApp } from "./request-app.js";
 import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
@@ -6,6 +6,14 @@ import { openTalentSearch } from "./talent-search.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 function dbg(...args) { console.log(`${MODULE_ID} |`, ...args); }
+
+function isFeatureEnabled(key, fallback = true) {
+  try {
+    return game.settings.get(MODULE_ID, key);
+  } catch (_) {
+    return fallback;
+  }
+}
 
 Hooks.once("init", () => {
   try {
@@ -55,56 +63,81 @@ Hooks.once("init", () => {
     });
   } catch (e) { console.error(MODULE_ID, e); }
 
-dbg("init");
+  dbg("init");
 
   Hooks.on("getSceneControlButtons", (controls) => {
-    const tokenControls = controls.find(c => c.name === "token") ?? controls[0];
+    const tokenControls = resolveTokenControls(controls);
     if (!tokenControls) return;
 
-    if (game.user?.isGM && game.settings.get(MODULE_ID, "enableRequestRolls")) {
-      const exists = tokenControls.tools?.some(t => t.name === "grr-request-roll");
-      if (!exists) {
-        tokenControls.tools.push({
-          name: "grr-request-roll",
-          title: Lang.t("controls.requestRoll"),
-          icon: "fas fa-dice-d20",
-          button: true,
-          onClick: () => new RollRequestApp().render(true)
-        });
-      }
-    }
+    const tools = ensureSceneControlToolsContainer(tokenControls);
+    if (!tools) return;
 
-    const existsTalent = tokenControls.tools?.some(t => t.name === "grr-talent-search");
-    if (game.settings.get(MODULE_ID, "enableTalentSearch") && !existsTalent) {
-      tokenControls.tools.push({
-        name: "grr-talent-search",
-        title: Lang.t("controls.talentSearch"),
-        icon: "fas fa-magnifying-glass",
+    const addTool = (tool) => {
+      const exists = Array.isArray(tools)
+        ? tools.some(t => t?.name === tool.name)
+        : Object.values(tools).some(t => t?.name === tool.name);
+      if (exists) return;
+
+      if (Array.isArray(tools)) tools.push(tool);
+      else {
+        tool.order ??= Object.keys(tools).length;
+        tools[tool.name] = tool;
+      }
+    };
+
+    if (game.user?.isGM && isFeatureEnabled("enableRequestRolls", true)) {
+      addTool({
+        name: "grr-request-roll",
+        title: Lang.t("request.title"),
+        icon: "fas fa-dice",
         button: true,
-        onClick: () => openTalentSearch()
+        visible: true,
+        onClick: () => new RollRequestApp().render(true)
       });
     }
+
+    if (isFeatureEnabled("enableTalentSearch", true)) addTool({
+      name: "grr-talent-search",
+      title: Lang.t("controls.talentSearch"),
+      icon: "fas fa-magnifying-glass",
+      button: true,
+      visible: true,
+      onClick: () => openTalentSearch()
+    });
   });
 });
 
 Hooks.once("ready", async () => {
   dbg("ready", { user: game.user?.name, id: game.user?.id, isGM: game.user?.isGM });
 
-  if (game.settings.get(MODULE_ID, "enableItemSend")) registerItemTransferFeature();
+  if (isFeatureEnabled("enableItemSend", true)) {
+    try { registerItemTransferFeature(); } catch (e) { console.error(`${MODULE_ID} | item transfer registration failed`, e); }
+  }
+  if (isFeatureEnabled("enableCurrency", true)) {
+    try { registerCurrencySocket(); } catch (e) { console.error(`${MODULE_ID} | currency socket registration failed`, e); }
+    try { registerCurrencyAutoRefresh(); } catch (e) { console.error(`${MODULE_ID} | currency auto-refresh registration failed`, e); }
+  }
 
   game.socket.on(`module.${MODULE_ID}`, async (payload) => {
     try {
       dbg("socket received", payload);
       if (!payload?.type) return;
-      if (payload.type === "reloadAll") { if (!window._gfoeReload) { window._gfoeReload = true; setTimeout(() => window.location.reload(), 200); } return; }
+
+      if (payload.type === "reloadAll") {
+        setTimeout(() => { try { window.location.reload(); } catch (_) {} }, 50);
+        return;
+      }
 
       if (payload.type === "ROLL_REQUEST") {
+        if (!isFeatureEnabled("enableRequestRolls", true)) return;
         if (payload.toUser && payload.toUser !== game.user.id) return;
         await showPlayerPopup(payload);
         return;
       }
 
-      if (game.settings.get(MODULE_ID, "enableItemSend")) await handleItemTransferSocket(payload);
+      if (isFeatureEnabled("enableItemSend", true)) {
+        await handleItemTransferSocket(payload);
+      }
     } catch (err) {
       console.error(`${MODULE_ID} | socket handler error`, err);
       ui.notifications?.error(`${MODULE_ID}: socket handler error (see console)`);
@@ -115,15 +148,40 @@ Hooks.once("ready", async () => {
 
   if (ui?.controls) {
     try {
-      if (typeof ui.controls.initialize === "function") ui.controls.initialize();
-      if (typeof ui.controls.render === "function") ui.controls.render(true);
+      if (typeof ui.controls.render === "function") ui.controls.render({ force: true });
       else if (typeof ui.controls.draw === "function") ui.controls.draw();
+      else if (typeof ui.controls.initialize === "function") ui.controls.initialize();
       dbg("controls refreshed");
     } catch (e) {
       console.warn(`${MODULE_ID} | controls refresh failed`, e);
     }
   }
 });
+
+function resolveTokenControls(controls) {
+  if (!controls) return null;
+
+  if (Array.isArray(controls)) {
+    return controls.find(c => ["token", "tokens"].includes(c?.name)) ?? controls[0] ?? null;
+  }
+
+  if (typeof controls === "object") {
+    return controls.tokens ?? controls.token ?? Object.values(controls)[0] ?? null;
+  }
+
+  return null;
+}
+
+function ensureSceneControlToolsContainer(control) {
+  if (!control) return null;
+
+  if (Array.isArray(control.tools)) return control.tools;
+
+  if (control.tools && typeof control.tools === "object") return control.tools;
+
+  control.tools = [];
+  return control.tools;
+}
 
 async function showPlayerPopup(payload) {
   const gmUser = payload.fromGM ? game.users.get(payload.fromGM) : null;
@@ -284,6 +342,7 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
 
 Hooks.once('init', () => {
   const MODID = "genesys-ffg-options-enhancer";
+  // Currency conversion settings
   game.settings.register(MODID, "silverPerGold", {
     name: game.i18n.localize("GFOE.SettingSilverPerGoldName"),
     hint: game.i18n.localize("GFOE.SettingSilverPerGoldHint"),
@@ -302,7 +361,7 @@ Hooks.once('init', () => {
   });
 });
 
-Hooks.once('ready', () => { try { if (game.settings.get(MODULE_ID, "enableCurrency")) registerCurrencyUIHook(); } catch(e){ console.error(e);} });
+Hooks.once('ready', () => { try { if (isFeatureEnabled("enableCurrency", true)) registerCurrencyUIHook(); } catch(e){ console.error(e);} });
 
 
 Hooks.once("init", () => {

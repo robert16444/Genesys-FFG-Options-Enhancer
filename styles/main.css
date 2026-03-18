@@ -20,9 +20,100 @@
 .grr-player-popup .grr-col { display: flex; flex-direction: column; gap: 2px; }
 .grr-player-popup .grr-sub { font-size: 12px; opacity: 0.85; }
 
+
+/* GFOE currency nicer layout */
 .currency-manager.nice .card { padding: 8px; border: 1px solid var(--color-border); border-radius: 6px; background: rgba(0,0,0,0.05); margin-bottom: 8px; }
 .currency-manager.nice .actions .button, .currency-manager.nice button { padding: 6px 10px; border-radius: 6px; }
 .currency-manager.nice .flex-row.gap { display:flex; gap:8px; flex-wrap:wrap; }
-
 .gfoe-dialog.nice .form-grid { display:grid; grid-template-columns: 1fr 2fr; gap:6px; }
 .gfoe-dialog.nice .dialog-buttons { margin-top: 8px; display:flex; justify-content:flex-end; }
+
+.grr-row-top { align-items: flex-start; }
+.grr-skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 4px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.03);
+}
+.grr-skill-option {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1.2;
+  background: transparent;
+}
+.grr-skill-option:hover {
+  box-shadow: 0 0 0 1px var(--color-border-highlight);
+}
+.grr-skill-option.active {
+  outline: 2px solid var(--color-border-highlight);
+  font-weight: 700;
+}
+
+
+
+
+/* Item transfer: make injected context option keep the same visible background as system entries */
+nav.context-menu .grr-context-send-item,
+.context-menu .grr-context-send-item,
+#context-menu .grr-context-send-item {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+nav.context-menu .grr-context-send-item > a,
+nav.context-menu .grr-context-send-item > button,
+nav.context-menu .grr-context-send-item > .menu-item,
+.context-menu .grr-context-send-item > a,
+.context-menu .grr-context-send-item > button,
+.context-menu .grr-context-send-item > .menu-item,
+#context-menu .grr-context-send-item > a,
+#context-menu .grr-context-send-item > button,
+#context-menu .grr-context-send-item > .menu-item {
+  display: flex !important;
+  width: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
+/* Item transfer: keep identical base and hover behavior as native Send to Chat row */
+nav.context-menu .grr-context-send-item,
+.context-menu .grr-context-send-item,
+#context-menu .grr-context-send-item {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+nav.context-menu .grr-context-send-item > a,
+nav.context-menu .grr-context-send-item > button,
+nav.context-menu .grr-context-send-item > .menu-item,
+.context-menu .grr-context-send-item > a,
+.context-menu .grr-context-send-item > button,
+.context-menu .grr-context-send-item > .menu-item,
+#context-menu .grr-context-send-item > a,
+#context-menu .grr-context-send-item > button,
+#context-menu .grr-context-send-item > .menu-item {
+  display: flex !important;
+  width: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: inherit !important;
+}
+
+nav.context-menu .grr-context-send-item:hover > a,
+nav.context-menu .grr-context-send-item:focus-within > a,
+.context-menu .grr-context-send-item:hover > a,
+.context-menu .grr-context-send-item:focus-within > a,
+#context-menu .grr-context-send-item:hover > a,
+#context-menu .grr-context-send-item:focus-within > a {
+  background: inherit !important;
+}
