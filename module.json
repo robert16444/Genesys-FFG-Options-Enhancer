@@ -2,7 +2,7 @@
   "id": "genesys-ffg-options-enhancer",
   "title": "Genesys FFG Options Enhancer",
   "description": "Enhances the Genesys FFG system with convenient tools: Roll Requests, Talent Search, Item Transfer and more.",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "authors": [
     {
       "name": "robert16444",
@@ -31,7 +31,7 @@
         "compatibility": {
           "minimum": "2.0.0",
           "verified": "2.0.0",
-          "maximum": "2.0.1"
+          "maximum": "2.0.3"
         }
       }
     ]
