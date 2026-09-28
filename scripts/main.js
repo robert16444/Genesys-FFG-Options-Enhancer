@@ -5,7 +5,10 @@ import { registerItemTransferFeature, handleItemTransferSocket } from "./item-tr
 import { openTalentSearch } from "./talent-search.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
-function dbg(...args) { console.log(`${MODULE_ID} |`, ...args); }
+const DEBUG = false;
+function dbg(...args) {
+  if (DEBUG) console.debug(`${MODULE_ID} |`, ...args);
+}
 
 function isFeatureEnabled(key, fallback = true) {
   try {

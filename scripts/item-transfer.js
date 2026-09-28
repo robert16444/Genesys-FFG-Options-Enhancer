@@ -36,6 +36,73 @@ const MSG = {
 
 let lastRCItemInfo = null; // {actorId, itemId}
 let grrContextStateInstalled = false;
+const pendingTransfers = new Map();
+const transfersInProgress = new Set();
+const OFFER_LIFETIME_MS = 10 * 60 * 1000;
+
+function getItemQuantity(item) {
+  const raw = item?.system?.quantity?.value;
+  if (raw == null) return 1; // Older items without the field represent one item.
+  const quantity = Number(raw);
+  return Number.isSafeInteger(quantity) && quantity >= 0 ? quantity : NaN;
+}
+
+function parseTransferQuantity(raw) {
+  const quantity = Number(raw);
+  return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null;
+}
+
+function itemStackSignature(item) {
+  const raw = item?.toObject?.() ?? item ?? {};
+
+  const normalize = (value, path = []) => {
+    if (Array.isArray(value)) return value.map((entry, index) => normalize(entry, [...path, String(index)]));
+    if (value instanceof Set) return Array.from(value, entry => normalize(entry, path));
+    if (value instanceof Map) {
+      return Object.fromEntries(
+        Array.from(value.entries())
+          .sort(([a], [b]) => String(a).localeCompare(String(b)))
+          .map(([key, entry]) => [String(key), normalize(entry, [...path, String(key)])])
+      );
+    }
+    if (!value || typeof value !== "object") return value;
+
+    const out = {};
+    const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
+    for (const [key, entry] of entries) {
+      const nextPath = [...path, key];
+      const joined = nextPath.join(".");
+
+      if (key === "_id" || key === "_key" || key === "_stats") continue;
+      if (path.length === 0 && (key === "sort" || key === "folder" || key === "ownership")) continue;
+
+      if (joined === "system.quantity.value") continue;
+
+      if (path[0] === "effects" && key === "origin") continue;
+      if (joined === "flags.core.sourceId") continue;
+
+      out[key] = normalize(entry, nextPath);
+    }
+    return out;
+  };
+
+  return JSON.stringify(normalize(raw));
+}
+
+function canStackItems(sourceItem, targetItem) {
+  if (!sourceItem || !targetItem) return false;
+  if (sourceItem.name !== targetItem.name) return false; // case-sensitive by design
+  return itemStackSignature(sourceItem) === itemStackSignature(targetItem);
+}
+
+function isPrimaryGM() {
+  const activeGM = game.users.find(user => user.active && user.isGM);
+  return game.user.isGM && activeGM?.id === game.user.id;
+}
+
+async function notifyTransferUsers(userIds, message) {
+  await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: userIds, message });
+}
 
 export function registerItemTransferFeature() {
   if (!isItemTransferEnabled()) return;
@@ -254,12 +321,45 @@ function copyComputedBox(source, target, { includeBackground = true } = {}) {
   for (const prop of props) t[prop] = s[prop];
 }
 
+function copyTextStyle(source, target) {
+  if (!source || !target) return;
+
+  const sourceStyle = getComputedStyle(source);
+  const targetStyle = target.style;
+  const props = [
+    "color",
+    "font",
+    "fontFamily",
+    "fontSize",
+    "fontStyle",
+    "fontWeight",
+    "fontVariant",
+    "fontStretch",
+    "letterSpacing",
+    "lineHeight",
+    "textAlign",
+    "textDecoration",
+    "textTransform",
+    "textShadow",
+    "whiteSpace"
+  ];
+
+  for (const prop of props) {
+    const value = sourceStyle[prop];
+    if (value != null && value !== "") targetStyle[prop] = value;
+  }
+}
+
 async function onSendItemClicked(fromActor, itemId) {
   if (!isItemTransferEnabled()) return ui.notifications?.warn?.(__t("itemTransfer.disabled") || "Item transfer is disabled.");
   try {
     const item = fromActor.items.get(itemId);
     if (!item) return ui.notifications.warn(__t("itemTransfer.itemNotFound"));
     if (!isAllowedItem(item)) return ui.notifications.warn(__t("itemTransfer.onlyAllowed"));
+    const available = getItemQuantity(item);
+    if (!Number.isSafeInteger(available) || available < 1) {
+      return ui.notifications.warn(__t("itemTransfer.invalidStock"));
+    }
 
     const sourceActorId = fromActor?.id ?? null;
     const candidates = game.users
@@ -279,6 +379,18 @@ async function onSendItemClicked(fromActor, itemId) {
           <label>${__t("itemTransfer.selectRecipient")}</label>
           <select name="grrRecipient">${options}</select>
         </div>
+        <div class="form-group">
+          <label>${__t("itemTransfer.quantity")}</label>
+          ${available > 1
+            ? `<div class="grr-item-quantity-stepper" style="display:flex; align-items:center; gap:8px; width:max-content; margin:.35rem 0;">
+                <button type="button" data-grr-qty-delta="-1" aria-label="${__t("itemTransfer.decreaseQuantity")}" title="−" style="width:34px; min-width:34px; height:32px; padding:0; font-size:20px; line-height:1;">−</button>
+                <output data-grr-qty-display for="grrItemQuantity" style="min-width:42px; text-align:center; font-weight:700; font-size:1.05em;">1</output>
+                <input id="grrItemQuantity" type="hidden" name="grrQuantity" value="1" />
+                <button type="button" data-grr-qty-delta="1" aria-label="${__t("itemTransfer.increaseQuantity")}" title="+" style="width:34px; min-width:34px; height:32px; padding:0; font-size:20px; line-height:1;">+</button>
+              </div>`
+            : `<strong>1</strong>`}
+          <p class="notes">${__t("itemTransfer.available", { quantity: available })}</p>
+        </div>
       </div>
     `;
 
@@ -292,15 +404,24 @@ async function onSendItemClicked(fromActor, itemId) {
           callback: async (html) => {
             const toUserId = html.find("select[name='grrRecipient']").val();
             if (!toUserId) return ui.notifications.warn(__t("request.selectUser"));
+            const quantity = available > 1
+              ? parseTransferQuantity(html.find("input[name='grrQuantity']").val())
+              : 1;
+            const currentItem = fromActor.items.get(itemId);
+            const currentStock = getItemQuantity(currentItem);
+            if (!quantity || !currentItem || quantity > currentStock) {
+              return ui.notifications.warn(__t("itemTransfer.invalidQuantity", { quantity: Number.isSafeInteger(currentStock) ? currentStock : 0 }));
+            }
             const requestPayload = {
               type: MSG.REQUEST_TO_GM,
               fromUserId: game.user.id,
               fromActorId: fromActor.id,
               itemId,
+              quantity,
               toUserId
             };
 
-            if (game.user.isGM) {
+            if (isPrimaryGM()) {
               await handleRequestToGM(requestPayload);
             } else {
               await emitToModuleSocket(requestPayload);
@@ -311,7 +432,33 @@ async function onSendItemClicked(fromActor, itemId) {
         },
         cancel: { label: __t("common.cancel") }
       },
-      default: "send"
+      default: "send",
+      render: (html) => {
+        if (available <= 1) return;
+
+        const input = html.find("input[name='grrQuantity']");
+        const display = html.find("[data-grr-qty-display]");
+        const minus = html.find("[data-grr-qty-delta='-1']");
+        const plus = html.find("[data-grr-qty-delta='1']");
+
+        const setQuantity = (rawValue) => {
+          const requested = Number(rawValue);
+          const next = Math.max(1, Math.min(available, Number.isFinite(requested) ? Math.trunc(requested) : 1));
+          input.val(String(next));
+          display.text(String(next));
+          minus.prop("disabled", next <= 1);
+          plus.prop("disabled", next >= available);
+        };
+
+        html.find("[data-grr-qty-delta]").on("click", (event) => {
+          event.preventDefault();
+          const delta = Number(event.currentTarget?.dataset?.grrQtyDelta ?? 0);
+          const current = parseTransferQuantity(input.val()) ?? 1;
+          setQuantity(current + delta);
+        });
+
+        setQuantity(1);
+      }
     }).render(true);
 
   } catch (err) {
@@ -336,7 +483,7 @@ export async function handleItemTransferSocket(payload) {
 }
 
 async function handleRequestToGM(payload) {
-  if (!game.user.isGM) return;
+  if (!isPrimaryGM()) return;
 
   const fromUser = game.users.get(payload.fromUserId);
   const toUser = game.users.get(payload.toUserId);
@@ -346,23 +493,55 @@ async function handleRequestToGM(payload) {
 
   if (!fromUser || !toUser || !fromActor || !toActor || !item) return;
 
+  // The GM does not trust the quantity or the source actor supplied over the socket.
+  if (!fromUser.active || !toUser.active || toUser.isGM || fromUser.id === toUser.id ||
+      fromActor.id === toActor.id ||
+      (!fromUser.isGM && !fromActor.testUserPermission(fromUser, "OWNER"))) return;
+
   if (!isAllowedItem(item)) {
     await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [payload.fromUserId], message: __t("itemTransfer.onlyAllowed") });
     return;
   }
 
-  await emitToModuleSocket({
-    type: MSG.REQUEST_TO_RECIPIENT,
+  const quantity = parseTransferQuantity(payload.quantity);
+  const available = getItemQuantity(item);
+  if (!quantity || quantity > available) {
+    await notifyTransferUsers([payload.fromUserId], __t("itemTransfer.invalidQuantity", {
+      quantity: Number.isSafeInteger(available) ? available : 0
+    }));
+    return;
+  }
+
+  const now = Date.now();
+  for (const [id, offer] of pendingTransfers) {
+    if (now - offer.createdAt > OFFER_LIFETIME_MS) pendingTransfers.delete(id);
+  }
+  const requestId = foundry.utils.randomID();
+  const offer = {
+    requestId,
+    createdAt: now,
     fromUserId: payload.fromUserId,
-    fromUserName: fromUser.name,
     fromActorId: fromActor.id,
-    itemId: payload.itemId,
-    itemName: item.name,
-    itemImg: item.img ?? "icons/svg/item-bag.svg",
-    itemType: item.type,
-    toUserId: payload.toUserId,
+    itemId: item.id,
+    quantity,
+    toUserId: toUser.id,
     toActorId: toActor.id
-  });
+  };
+  pendingTransfers.set(requestId, offer);
+
+  try {
+    await emitToModuleSocket({
+      type: MSG.REQUEST_TO_RECIPIENT,
+      ...offer,
+      fromUserName: fromUser.name,
+      itemName: item.name,
+      itemImg: item.img ?? "icons/svg/item-bag.svg",
+      itemType: item.type
+    });
+  } catch (err) {
+    pendingTransfers.delete(requestId);
+    throw err;
+  }
 }
 
 async function handleRequestToRecipient(payload) {
@@ -375,7 +554,7 @@ async function handleRequestToRecipient(payload) {
         <img src="${payload.itemImg ?? "icons/svg/item-bag.svg"}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;" />
         <div>
           <div>${__t("itemTransfer.senderWantsToSend", { sender: escapeHtml(payload.fromUserName ?? "Player") })}</div>
-          <div style="font-size:14px;"><b>${escapeHtml(payload.itemName ?? "Item")}</b> <span style="opacity:.8">(${escapeHtml(typeLabel)})</span></div>
+          <div style="font-size:14px;"><b>${escapeHtml(payload.itemName ?? "Item")}</b> × ${escapeHtml(payload.quantity)} <span style="opacity:.8">(${escapeHtml(typeLabel)})</span></div>
         </div>
       </div>
       <hr/>
@@ -401,11 +580,16 @@ async function handleRequestToRecipient(payload) {
 }
 
 async function handleResponseToGM(payload) {
-  if (!game.user.isGM) return;
+  if (!isPrimaryGM()) return;
 
-  const ok = !!payload.accepted;
-  const req = payload.request;
-  if (!req) return;
+  const requestId = payload.request?.requestId;
+  const req = pendingTransfers.get(requestId);
+  if (!req || payload.responderUserId !== req.toUserId) return;
+  pendingTransfers.delete(requestId); // A response is processed only once.
+  if (Date.now() - req.createdAt > OFFER_LIFETIME_MS) {
+    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.expired"));
+    return;
+  }
 
   const fromActor = game.actors.get(req.fromActorId);
   const toActor = game.actors.get(req.toActorId);
@@ -415,29 +599,101 @@ async function handleResponseToGM(payload) {
 
   if (!fromActor || !toActor || !fromUser || !toUser) return;
 
-  if (!ok) {
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [req.fromUserId], message: __t("itemTransfer.declinedBy", { user: toUser.name }) });
+  if (!payload.accepted) {
+    await notifyTransferUsers([req.fromUserId], __t("itemTransfer.declinedBy", { user: toUser.name }));
     return;
   }
 
   if (!item) {
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [req.fromUserId, req.toUserId], message: __t("itemTransfer.missingItem", { actor: fromActor.name }) });
+    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.missingItem", { actor: fromActor.name }));
     return;
   }
 
   if (!isAllowedItem(item)) {
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [req.fromUserId], message: __t("itemTransfer.onlyAllowed") });
+    await notifyTransferUsers([req.fromUserId], __t("itemTransfer.onlyAllowed"));
     return;
   }
 
+  const lockKey = `${fromActor.id}:${item.id}`;
+  const recipientLockKey = `recipient:${toActor.id}`;
+  if (transfersInProgress.has(lockKey) || transfersInProgress.has(recipientLockKey)) {
+    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.busy"));
+    return;
+  }
+  transfersInProgress.add(lockKey);
+  transfersInProgress.add(recipientLockKey);
+
   try {
-    const itemData = item.toObject();
-    await toActor.createEmbeddedDocuments("Item", [itemData]);
-    await fromActor.deleteEmbeddedDocuments("Item", [item.id]);
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [req.fromUserId, req.toUserId], message: __t("itemTransfer.transferred", { item: item.name, from: fromActor.name, to: toActor.name }) });
+    const available = getItemQuantity(item);
+    const quantity = parseTransferQuantity(req.quantity);
+    if (!quantity || quantity > available) {
+      await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.invalidQuantity", {
+        quantity: Number.isSafeInteger(available) ? available : 0
+      }));
+      return;
+    }
+
+    let created = [];
+    let existingItem = null;
+    let previousRecipientQuantity = null;
+    try {
+      existingItem = Array.from(toActor.items.values()).find(other => canStackItems(item, other)) ?? null;
+      if (existingItem) {
+        previousRecipientQuantity = getItemQuantity(existingItem);
+        const newQuantity = previousRecipientQuantity + quantity;
+        if (!Number.isSafeInteger(previousRecipientQuantity) || previousRecipientQuantity < 0 ||
+            !Number.isSafeInteger(newQuantity)) {
+          throw new Error("Recipient item quantity is invalid or would overflow");
+        }
+        await existingItem.update({ "system.quantity.value": newQuantity });
+      } else {
+        const itemData = item.toObject();
+        delete itemData._id; // New item only when no exact-name match exists.
+        itemData.system ??= {};
+        itemData.system.quantity ??= {};
+        itemData.system.quantity.value = quantity;
+        created = await toActor.createEmbeddedDocuments("Item", [itemData]);
+        if (!Array.isArray(created) || created.length !== 1) throw new Error("Recipient item creation failed");
+      }
+
+      if (quantity === available) {
+        await fromActor.deleteEmbeddedDocuments("Item", [item.id]);
+      } else {
+        await item.update({ "system.quantity.value": available - quantity });
+      }
+    } catch (err) {
+      // If the sender's stock could not be changed, restore the recipient's
+      // previous stack quantity or delete the newly created item.
+      try {
+        if (existingItem && Number.isSafeInteger(previousRecipientQuantity) &&
+            getItemQuantity(existingItem) !== previousRecipientQuantity) {
+          await existingItem.update({ "system.quantity.value": previousRecipientQuantity });
+        } else if (created.length) {
+          await toActor.deleteEmbeddedDocuments("Item", created.map(newItem => newItem.id));
+        }
+      } catch (rollbackError) {
+        console.error(`${MODULE_ID} | item-transfer | rollback failed; GM must check inventories`, rollbackError);
+        await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.rollbackFailed"));
+      }
+      throw err;
+    }
+
+    try {
+      await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.transferred", {
+        item: item.name,
+        quantity,
+        from: fromActor.name,
+        to: toActor.name
+      }));
+    } catch (notifyError) {
+      console.warn(`${MODULE_ID} | item-transfer | transfer completed but notification failed`, notifyError);
+    }
   } catch (err) {
     console.error(`${MODULE_ID} | item-transfer | GM transfer failed`, err);
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [req.fromUserId, req.toUserId], message: __t("itemTransfer.transferFailedMsg") });
+    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.transferFailedMsg"));
+  } finally {
+    transfersInProgress.delete(lockKey);
+    transfersInProgress.delete(recipientLockKey);
   }
 }
 

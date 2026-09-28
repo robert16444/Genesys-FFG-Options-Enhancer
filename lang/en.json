@@ -32,7 +32,7 @@
     "boost": "Boost (blue)",
     "selectPlayersFirst": "(select player(s) first)",
     "rollModePublic": "Public",
-    "selectedPlayerHasNoCharacter": "The selected player has no character assigned.", 
+    "selectedPlayerHasNoCharacter": "The selected player has no character assigned.",
     "noSkillFound": "No skill found on this character."
   },
   "itemTransfer": {
@@ -52,6 +52,15 @@
     "itemNotFound": "Item not found.",
     "onlyAllowed": "Only Armour, Gear, and Weapon items can be sent.",
     "sendItem": "Send item",
+    "quantity": "Quantity to send",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "available": "Available: {quantity}",
+    "invalidStock": "Cannot send item: invalid item quantity.",
+    "invalidQuantity": "Invalid quantity. Currently available: {quantity}.",
+    "busy": "This item stack is already being transferred. Please try again.",
+    "expired": "The item transfer offer expired. Please send a new one.",
+    "rollbackFailed": "Warning: could not undo the failed transfer. The GM should check both inventories.",
     "toOnline": "To (online player)",
     "dialogTitle": "Send to player",
     "send": "Send",
@@ -61,7 +70,7 @@
     "declinedInfo": "Declined.",
     "declinedBy": "{user} declined your item transfer.",
     "missingItem": "Item no longer exists in {actor}'s inventory.",
-    "transferred": "Transferred \"{item}\" from {from} to {to}.",
+    "transferred": "Transferred \"{item}\" (×{quantity}) from {from} to {to}.",
     "transferFailedMsg": "Transfer failed (GM: see console)."
   },
   "talent": {
