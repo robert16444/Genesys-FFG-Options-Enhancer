@@ -20,7 +20,8 @@
     "styles/main.css"
   ],
   "templates": [
-    "templates/request-ui.hbs"
+    "templates/request-ui.hbs",
+    "templates/result-spender-config.hbs"
   ],
   "socket": true,
   "relationships": {

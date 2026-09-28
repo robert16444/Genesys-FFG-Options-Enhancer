@@ -194,6 +194,289 @@
     "enableTalentSearchName": "Enable talent/spell search",
     "enableTalentSearchHint": "If unchecked, the Talent Search tool is hidden and inactive.",
     "enableRequestRollsName": "Enable roll requests",
-    "enableRequestRollsHint": "If unchecked, the Request a Roll tool is hidden and inactive."
+    "enableRequestRollsHint": "If unchecked, the Request a Roll tool is hidden and inactive.",
+    "enableResultSpenderName": "Enable Spend Results",
+    "enableResultSpenderHint": "Adds interactive spending of Advantage, Threat, Triumph, and Despair to FFG roll chat messages.",
+    "resultSpenderMenuName": "Spend Results options",
+    "resultSpenderMenuLabel": "Configure Spend Results",
+    "resultSpenderMenuHint": "Add campaign-specific ways to spend narrative dice results and define their costs."
+  },
+  "resultSpender": {
+    "contextLabel": "Spend Results",
+    "dialogTitle": "Spend Results",
+    "remaining": "Results remaining to spend",
+    "spentSoFar": "Spent so far",
+    "spend": "Spend",
+    "availableNow": "available: {count}",
+    "playerRestriction": "Players can spend only Advantage and Triumph from their own/controlled rolls. Threat and Despair can be spent only by a GM.",
+    "chatTitle": "Results spent",
+    "chatSpent": "{user} spent {cost} on {option} from {roll}.",
+    "roll": "roll",
+    "disabled": "Spend Results is disabled.",
+    "notSpendable": "This chat message does not contain spendable FFG narrative dice results.",
+    "noPermission": "You cannot spend results from this roll.",
+    "gmOnlyNegative": "Only a GM can spend Threat or Despair.",
+    "noGM": "No active GM is available to authorize result spending.",
+    "optionMissing": "This spending option no longer exists. Reopen Spend Results and try again.",
+    "busy": "This roll is being updated. Try again in a moment.",
+    "notEnough": "Not enough {symbol}. Cost: {needed}; remaining: {remaining}.",
+    "failed": "Could not spend the result. See the console for details.",
+    "noOptions": "No spending options are configured for the available results.",
+    "settingsTitle": "Spend Results Options",
+    "settingsIntro": "Built-in options follow the standard result-spending tables for social encounters and combat. The module automatically selects the correct set depending on whether a started Combat is active on the current scene. GM custom options remain available in both modes.",
+    "builtInTitle": "Built-in options",
+    "builtInHint": "Built-in options are selected automatically for the current context. They do not apply mechanical effects automatically; they track the spend and announce the chosen effect in chat.",
+    "customTitle": "Custom spending options",
+    "customHint": "Add your own result, cost, name, and optional description. Threat and Despair options are automatically GM-only.",
+    "addCustom": "Add option",
+    "clearCustom": "Clear custom options",
+    "save": "Save options",
+    "delete": "Delete option",
+    "noCustom": "No custom spending options yet.",
+    "fieldName": "Name",
+    "fieldResult": "Result",
+    "fieldCost": "Cost",
+    "fieldDescription": "Description (optional)",
+    "nameRequired": "Every custom spending option needs a name.",
+    "invalidCost": "Cost must be a whole number from 1 to 99.",
+    "invalidCustom": "One of the custom spending options is invalid.",
+    "settingsSaved": "Spend Results options saved.",
+    "symbols": {
+      "advantage": "Advantage",
+      "threat": "Threat",
+      "triumph": "Triumph",
+      "despair": "Despair"
+    },
+    "symbolShort": {
+      "advantage": "A",
+      "threat": "T",
+      "triumph": "Tr",
+      "despair": "D"
+    },
+    "builtins": {
+      "socialRecoverStrain": {
+        "title": "Recover 1 strain",
+        "description": "The active character recovers 1 strain."
+      },
+      "socialNextAllyBoost": {
+        "title": "Boost the next active ally",
+        "description": "Add a Boost die to the next check made by the next allied active character."
+      },
+      "socialNoticeDetail": {
+        "title": "Notice an important detail",
+        "description": "Notice one important detail in the ongoing encounter that can provide a situational advantage."
+      },
+      "socialLearnStrengthFlaw": {
+        "title": "Learn the target's Strength or Flaw",
+        "description": "Learn either the Strength or the Flaw of the targeted character."
+      },
+      "socialTargetBoost": {
+        "title": "Boost the target's next check",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "socialAnyAllyBoost": {
+        "title": "Boost any ally's next check",
+        "description": "Add a Boost die to any allied character's next check, including the active character."
+      },
+      "socialLearnDesireFear": {
+        "title": "Learn the target's Desire or Fear",
+        "description": "Learn either the Desire or the Fear of the targeted character."
+      },
+      "socialConcealGoal": {
+        "title": "Conceal your true goal",
+        "description": "Successfully conceal your true goal during the encounter."
+      },
+      "socialLearnTrueGoal": {
+        "title": "Learn the target's true goal",
+        "description": "Learn the target's true goal, if they have one."
+      },
+      "socialLearnMotivation": {
+        "title": "Learn any Motivation facet",
+        "description": "With GM approval, learn any one Motivation facet of a character in the encounter."
+      },
+      "socialUpgradeTargetDifficulty": {
+        "title": "Upgrade the target's next difficulty",
+        "description": "Upgrade the difficulty of the targeted character's next check once."
+      },
+      "socialUpgradeAllyAbility": {
+        "title": "Upgrade an ally's next check",
+        "description": "Upgrade the ability of any allied character's next check once, including the active character."
+      },
+      "socialDoVital": {
+        "title": "Do something vital",
+        "description": "Create a major narrative opening, such as getting everyone's attention or distracting guards so allies can act."
+      },
+      "socialSufferStrain": {
+        "title": "Active character suffers strain",
+        "description": "The active character suffers 1 strain for each Threat spent. If the effect is paid with Despair, the character suffers 1 strain."
+      },
+      "socialDistracted": {
+        "title": "Become distracted or sidetracked",
+        "description": "The active character is briefly distracted; this might block an ability requiring a maneuver on their next turn or drag them into an unwanted conversation."
+      },
+      "socialRevealStrengthFlaw": {
+        "title": "Reveal your own Strength or Flaw",
+        "description": "The active character accidentally reveals their own Strength or Flaw."
+      },
+      "socialTargetGetsBoost": {
+        "title": "Give the target a Boost",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "socialAllySetback": {
+        "title": "Setback on an ally's next action",
+        "description": "The active character or an allied character suffers a Setback die on their next action."
+      },
+      "socialRevealDesireFear": {
+        "title": "Reveal your own Desire or Fear",
+        "description": "The active character accidentally reveals their own Desire or Fear."
+      },
+      "socialRevealGoal": {
+        "title": "Reveal your true goal",
+        "description": "The active character accidentally reveals their true goal in the encounter."
+      },
+      "socialRevealAllyMotivation": {
+        "title": "Reveal an ally's Motivation",
+        "description": "The active character accidentally reveals one Motivation facet of an ally."
+      },
+      "socialFalseMotivation": {
+        "title": "Learn a false Motivation",
+        "description": "The active character learns a false Motivation facet of the target and believes it to be true."
+      },
+      "socialUpgradeAllyDifficulty": {
+        "title": "Upgrade an ally's next difficulty",
+        "description": "Upgrade the difficulty of an allied character's next check or the active character's next check once."
+      },
+      "socialLoseNextRound": {
+        "title": "Get embroiled in irrelevant events",
+        "description": "The active character becomes so caught up in irrelevant events that they cannot do anything important during the next round."
+      },
+      "combatRecoverStrain": {
+        "title": "Recover 1 strain",
+        "description": "The active character recovers 1 strain."
+      },
+      "combatNextAllyBoost": {
+        "title": "Boost the next ally",
+        "description": "Add a Boost die to the next allied character's next check."
+      },
+      "combatNoticeDetail": {
+        "title": "Notice an important detail",
+        "description": "Notice one important point in the conflict, such as a door control panel or a weak point on an armored vehicle."
+      },
+      "combatCriticalInjury": {
+        "title": "Inflict a Critical Injury",
+        "description": "On a successful attack that deals damage past soak, trigger a Critical Injury. The required Advantage cost can vary by weapon."
+      },
+      "combatItemQuality": {
+        "title": "Activate an Item Quality",
+        "description": "Activate a relevant item quality. The required Advantage cost can vary by quality."
+      },
+      "combatFreeManeuver": {
+        "title": "Immediate free maneuver",
+        "description": "Immediately perform a free maneuver without exceeding the limit of two maneuvers per turn."
+      },
+      "combatTargetBoost": {
+        "title": "Boost the target's next check",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "combatAnyAllyBoost": {
+        "title": "Boost any ally's next check",
+        "description": "Add a Boost die to any allied character's next check, including the active character."
+      },
+      "combatNegateDefense": {
+        "title": "Negate an enemy's Defense",
+        "description": "Negate the targeted enemy's Defense until the end of the current round, whether it comes from cover, equipment, or a guarded stance."
+      },
+      "combatIgnoreEnvironment": {
+        "title": "Ignore environmental penalties",
+        "description": "Ignore penalizing environmental effects until the end of the active character's next turn."
+      },
+      "combatDisableTarget": {
+        "title": "Disable the target or a piece of gear",
+        "description": "When dealing damage, disable the opponent or one piece of their gear instead of dealing wounds or strain. The player and GM should agree on the exact effect."
+      },
+      "combatGainDefense": {
+        "title": "Gain +1 Defense",
+        "description": "Gain +1 melee or ranged Defense until the end of the active character's next turn."
+      },
+      "combatDropWeapon": {
+        "title": "Force the target to drop a weapon",
+        "description": "Force the targeted character to drop one melee or ranged weapon they are wielding."
+      },
+      "combatUpgradeTargetDifficulty": {
+        "title": "Upgrade the target's next difficulty",
+        "description": "Upgrade the difficulty of the targeted character's next check once."
+      },
+      "combatUpgradeAllyAbility": {
+        "title": "Upgrade an ally's next check",
+        "description": "Upgrade the ability of any allied character's next check once, including the active character."
+      },
+      "combatDoVital": {
+        "title": "Do something vital",
+        "description": "Create a major combat effect, such as shooting nearby blast-door controls to seal them shut."
+      },
+      "combatInitiativeManeuver": {
+        "title": "Free maneuver before combat begins",
+        "description": "On an Initiative check, immediately perform a free maneuver before combat begins."
+      },
+      "combatDestroyEquipment": {
+        "title": "Destroy a piece of the target's equipment",
+        "description": "When dealing damage, destroy one piece of equipment the target is using, such as a weapon."
+      },
+      "combatSufferStrain": {
+        "title": "Active character suffers strain",
+        "description": "The active character suffers 1 strain for each Threat spent. If the effect is paid with Despair, the character suffers 1 strain."
+      },
+      "combatLoseManeuverBenefit": {
+        "title": "Lose the benefit of a prior maneuver",
+        "description": "The active character loses the benefit of a prior maneuver, such as cover or a guarded stance, until they perform it again."
+      },
+      "combatOpponentFreeManeuver": {
+        "title": "Opponent performs a free maneuver",
+        "description": "An opponent may immediately perform one free maneuver as an incidental response to the active character's check."
+      },
+      "combatTargetGetsBoost": {
+        "title": "Give the target a Boost",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "combatAllySetback": {
+        "title": "Setback on the next action",
+        "description": "The active character or an allied character suffers a Setback die on their next action."
+      },
+      "combatFallProne": {
+        "title": "Active character falls prone",
+        "description": "The active character falls prone."
+      },
+      "combatEnemyAdvantage": {
+        "title": "Grant the enemy a significant advantage",
+        "description": "The active character gives an enemy a significant advantage in the encounter, such as damaging an environmental feature needed for escape."
+      },
+      "combatOutOfAmmo": {
+        "title": "Weapon runs out of ammunition",
+        "description": "The active character's weapon immediately runs out of ammunition and cannot be used for the rest of the encounter."
+      },
+      "combatUpgradeAllyDifficulty": {
+        "title": "Upgrade an ally's next difficulty",
+        "description": "Upgrade the difficulty of an allied character's next check or the active character's next check once."
+      },
+      "combatDamageWeaponTool": {
+        "title": "Damage a weapon or tool",
+        "description": "A tool, Brawl weapon, or Melee weapon used by the active character becomes damaged."
+      }
+    },
+    "socialBuiltInTitle": "Social Encounters",
+    "combatBuiltInTitle": "Combat",
+    "encounterContext": "Context",
+    "contexts": {
+      "social": "Social encounter",
+      "combat": "Combat"
+    },
+    "decreaseCost": "Decrease cost",
+    "increaseCost": "Increase cost",
+    "invalidVariableCost": "An invalid result-spending cost was selected.",
+    "automation": {
+      "actorMissing": "Could not determine the active character for this roll. Strain was not changed.",
+      "strainUnavailable": "{actor} does not have a Strain track, so this effect cannot be applied automatically.",
+      "strainApplied": "Automatically updated {actor}'s Strain: {before} → {after}."
+    }
   }
 }

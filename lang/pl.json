@@ -193,6 +193,289 @@
     "enableTalentSearchName": "Włącz wyszukiwarkę talentów/spelli",
     "enableTalentSearchHint": "Odznaczone: narzędzie Wyszukiwarka talentów jest ukryte i nieaktywne.",
     "enableRequestRollsName": "Włącz żądanie rzutów",
-    "enableRequestRollsHint": "Odznaczone: narzędzie „Poproś o rzut” jest ukryte i nieaktywne."
+    "enableRequestRollsHint": "Odznaczone: narzędzie „Poproś o rzut” jest ukryte i nieaktywne.",
+    "enableResultSpenderName": "Włącz wydawanie wyników",
+    "enableResultSpenderHint": "Dodaje interaktywne wydawanie Advantage, Threat, Triumph i Despair z wyników rzutów FFG na czacie.",
+    "resultSpenderMenuName": "Opcje wydawania wyników",
+    "resultSpenderMenuLabel": "Konfiguruj wydawanie wyników",
+    "resultSpenderMenuHint": "Dodaj własne sposoby wydawania wyników kości narracyjnych i określ ich koszt."
+  },
+  "resultSpender": {
+    "contextLabel": "Wydaj wyniki",
+    "dialogTitle": "Wydaj wyniki",
+    "remaining": "Pozostało do wydania",
+    "spentSoFar": "Wydano do tej pory",
+    "spend": "Wydaj",
+    "availableNow": "dostępne: {count}",
+    "playerRestriction": "Gracz może wydawać tylko Advantage i Triumph ze swoich rzutów lub rzutów kontrolowanej przez siebie postaci. Threat i Despair może wydawać wyłącznie MG.",
+    "chatTitle": "Wydano wyniki rzutu",
+    "chatSpent": "{user} wydaje {cost} na: {option} (rzut: {roll}).",
+    "roll": "rzut",
+    "disabled": "Funkcja wydawania wyników jest wyłączona.",
+    "notSpendable": "Ta wiadomość nie zawiera wyników kości narracyjnych FFG, które można wydać.",
+    "noPermission": "Nie możesz wydawać wyników z tego rzutu.",
+    "gmOnlyNegative": "Threat i Despair może wydawać wyłącznie Mistrz Gry.",
+    "noGM": "Brak aktywnego Mistrza Gry, który może zatwierdzić wydanie wyników.",
+    "optionMissing": "Ta opcja wydawania już nie istnieje. Otwórz ponownie „Wydaj wyniki” i spróbuj jeszcze raz.",
+    "busy": "Ten rzut jest właśnie aktualizowany. Spróbuj ponownie za chwilę.",
+    "notEnough": "Za mało {symbol}. Koszt: {needed}; pozostało: {remaining}.",
+    "failed": "Nie udało się wydać wyniku. Szczegóły znajdziesz w konsoli.",
+    "noOptions": "Brak skonfigurowanych opcji wydawania dla dostępnych wyników.",
+    "settingsTitle": "Opcje wydawania wyników",
+    "settingsIntro": "Wbudowane opcje odpowiadają oficjalnym tabelom wydawania wyników dla spotkań społecznych i walki. Moduł automatycznie wybiera właściwy zestaw zależnie od tego, czy na aktywnej scenie trwa rozpoczęty Combat. Własne opcje GM są dostępne w obu trybach.",
+    "builtInTitle": "Opcje wbudowane",
+    "builtInHint": "Wbudowane opcje są dobierane automatycznie do kontekstu. Nie wykonują mechanicznie efektu — zapisują wydatek i ogłaszają wybrany efekt na czacie.",
+    "customTitle": "Własne opcje wydawania",
+    "customHint": "Dodaj typ wyniku, koszt, nazwę i opcjonalny opis. Opcje wykorzystujące Threat lub Despair są automatycznie dostępne tylko dla MG.",
+    "addCustom": "Dodaj opcję",
+    "clearCustom": "Wyczyść własne opcje",
+    "save": "Zapisz opcje",
+    "delete": "Usuń opcję",
+    "noCustom": "Nie dodano jeszcze żadnych własnych opcji.",
+    "fieldName": "Nazwa",
+    "fieldResult": "Wynik",
+    "fieldCost": "Koszt",
+    "fieldDescription": "Opis (opcjonalnie)",
+    "nameRequired": "Każda własna opcja wydawania musi mieć nazwę.",
+    "invalidCost": "Koszt musi być liczbą całkowitą od 1 do 99.",
+    "invalidCustom": "Jedna z własnych opcji wydawania jest nieprawidłowa.",
+    "settingsSaved": "Zapisano opcje wydawania wyników.",
+    "symbols": {
+      "advantage": "Advantage",
+      "threat": "Threat",
+      "triumph": "Triumph",
+      "despair": "Despair"
+    },
+    "symbolShort": {
+      "advantage": "A",
+      "threat": "T",
+      "triumph": "Tr",
+      "despair": "D"
+    },
+    "builtins": {
+      "socialRecoverStrain": {
+        "title": "Odzyskaj 1 strain",
+        "description": "Aktywna postać odzyskuje 1 strain."
+      },
+      "socialNextAllyBoost": {
+        "title": "Boost dla następnego aktywnego sojusznika",
+        "description": "Dodaj kość Boost do następnego testu kolejnej aktywnej postaci będącej sojusznikiem."
+      },
+      "socialNoticeDetail": {
+        "title": "Zauważ ważny szczegół",
+        "description": "Zauważ pojedynczy istotny element trwającego spotkania, który może dać przewagę sytuacyjną."
+      },
+      "socialLearnStrengthFlaw": {
+        "title": "Poznaj Strength lub Flaw celu",
+        "description": "Poznaj Strength albo Flaw wskazanej postaci."
+      },
+      "socialTargetBoost": {
+        "title": "Boost do następnego testu celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "socialAnyAllyBoost": {
+        "title": "Boost do następnego testu sojusznika",
+        "description": "Dodaj kość Boost do następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "socialLearnDesireFear": {
+        "title": "Poznaj Desire lub Fear celu",
+        "description": "Poznaj Desire albo Fear wskazanej postaci."
+      },
+      "socialConcealGoal": {
+        "title": "Ukryj swój prawdziwy cel",
+        "description": "Skutecznie ukryj swój prawdziwy cel w tym spotkaniu."
+      },
+      "socialLearnTrueGoal": {
+        "title": "Poznaj prawdziwy cel rozmówcy",
+        "description": "Poznaj prawdziwy cel wskazanej postaci, jeżeli taki posiada."
+      },
+      "socialLearnMotivation": {
+        "title": "Poznaj dowolny element Motivation",
+        "description": "Za zgodą GM poznaj dowolny element Motivation wybranej postaci w spotkaniu."
+      },
+      "socialUpgradeTargetDifficulty": {
+        "title": "Ulepsz trudność następnego testu celu",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu wskazanej postaci."
+      },
+      "socialUpgradeAllyAbility": {
+        "title": "Ulepsz następny test sojusznika",
+        "description": "Jednokrotnie ulepsz Ability następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "socialDoVital": {
+        "title": "Zrób coś kluczowego",
+        "description": "Uzyskaj znaczący efekt fabularny, np. skup uwagę wszystkich albo odciągnij strażników, aby sojusznicy mogli działać."
+      },
+      "socialSufferStrain": {
+        "title": "Aktywna postać otrzymuje strain",
+        "description": "Za każdy wydany Threat aktywna postać otrzymuje 1 strain. Jeśli efekt jest opłacany Despairem, otrzymuje 1 strain."
+      },
+      "socialDistracted": {
+        "title": "Rozproszenie lub zejście z tematu",
+        "description": "Aktywna postać zostaje chwilowo rozproszona; może np. stracić możliwość użycia zdolności wymagającej manewru w następnej turze albo utknąć w długiej rozmowie."
+      },
+      "socialRevealStrengthFlaw": {
+        "title": "Ujawnij własny Strength lub Flaw",
+        "description": "Aktywna postać przypadkowo ujawnia swój Strength albo Flaw."
+      },
+      "socialTargetGetsBoost": {
+        "title": "Boost dla celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "socialAllySetback": {
+        "title": "Setback do następnej akcji sojusznika",
+        "description": "Aktywna postać albo wybrany sojusznik otrzymuje kość Setback do swojej następnej akcji."
+      },
+      "socialRevealDesireFear": {
+        "title": "Ujawnij własny Desire lub Fear",
+        "description": "Aktywna postać przypadkowo ujawnia swój Desire albo Fear."
+      },
+      "socialRevealGoal": {
+        "title": "Ujawnij prawdziwy cel",
+        "description": "Aktywna postać przypadkowo ujawnia swój prawdziwy cel w spotkaniu."
+      },
+      "socialRevealAllyMotivation": {
+        "title": "Ujawnij Motivation sojusznika",
+        "description": "Aktywna postać przypadkowo ujawnia jeden element Motivation swojego sojusznika."
+      },
+      "socialFalseMotivation": {
+        "title": "Fałszywa Motivation celu",
+        "description": "Aktywna postać poznaje fałszywy element Motivation celu i uważa go za prawdziwy."
+      },
+      "socialUpgradeAllyDifficulty": {
+        "title": "Ulepsz trudność testu sojusznika",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu sojusznika albo następnego testu aktywnej postaci."
+      },
+      "socialLoseNextRound": {
+        "title": "Wciągnięcie w nieistotne wydarzenia",
+        "description": "Aktywna postać zostaje tak pochłonięta nieistotnymi wydarzeniami, że w następnej rundzie nie może zrobić niczego ważnego."
+      },
+      "combatRecoverStrain": {
+        "title": "Odzyskaj 1 strain",
+        "description": "Aktywna postać odzyskuje 1 strain."
+      },
+      "combatNextAllyBoost": {
+        "title": "Boost dla następnego sojusznika",
+        "description": "Dodaj kość Boost do następnego testu kolejnego sojusznika."
+      },
+      "combatNoticeDetail": {
+        "title": "Zauważ ważny szczegół",
+        "description": "Zauważ pojedynczy ważny element konfliktu, np. panel sterowania drzwiami albo słaby punkt pojazdu."
+      },
+      "combatCriticalInjury": {
+        "title": "Zadaj Critical Injury",
+        "description": "Przy udanym ataku, który zadał obrażenia po Soak, aktywuj Critical Injury. Wymagany koszt Advantage może zależeć od broni."
+      },
+      "combatItemQuality": {
+        "title": "Aktywuj Item Quality",
+        "description": "Aktywuj odpowiednią właściwość przedmiotu. Wymagany koszt Advantage może zależeć od danej właściwości."
+      },
+      "combatFreeManeuver": {
+        "title": "Natychmiastowy darmowy manewr",
+        "description": "Wykonaj natychmiast darmowy manewr, nie przekraczając limitu dwóch manewrów na turę."
+      },
+      "combatTargetBoost": {
+        "title": "Boost do następnego testu celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "combatAnyAllyBoost": {
+        "title": "Boost do następnego testu sojusznika",
+        "description": "Dodaj kość Boost do następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "combatNegateDefense": {
+        "title": "Zaneguj Defense przeciwnika",
+        "description": "Zaneguj Defense wskazanego przeciwnika do końca bieżącej rundy, niezależnie czy pochodzi z osłony, ekwipunku czy Guarded Stance."
+      },
+      "combatIgnoreEnvironment": {
+        "title": "Zignoruj kary środowiskowe",
+        "description": "Ignoruj negatywne efekty środowiska do końca następnej tury aktywnej postaci."
+      },
+      "combatDisableTarget": {
+        "title": "Obezwładnij cel lub jego wyposażenie",
+        "description": "Przy zadawaniu obrażeń zamiast wounds/strain tymczasowo obezwładnij przeciwnika albo jeden element jego wyposażenia. Szczegóły ustala gracz z GM."
+      },
+      "combatGainDefense": {
+        "title": "Zyskaj +1 Defense",
+        "description": "Zyskaj +1 melee albo ranged Defense do końca następnej tury aktywnej postaci."
+      },
+      "combatDropWeapon": {
+        "title": "Zmuś cel do upuszczenia broni",
+        "description": "Zmuś wskazany cel do upuszczenia trzymanej broni melee albo ranged."
+      },
+      "combatUpgradeTargetDifficulty": {
+        "title": "Ulepsz trudność następnego testu celu",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu wskazanej postaci."
+      },
+      "combatUpgradeAllyAbility": {
+        "title": "Ulepsz następny test sojusznika",
+        "description": "Jednokrotnie ulepsz Ability następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "combatDoVital": {
+        "title": "Zrób coś kluczowego",
+        "description": "Uzyskaj istotny efekt w walce, np. traf panel sterujący i zamknij pobliskie grodzie."
+      },
+      "combatInitiativeManeuver": {
+        "title": "Darmowy manewr przed rozpoczęciem walki",
+        "description": "Na teście Initiative wykonaj natychmiast darmowy manewr przed rozpoczęciem walki."
+      },
+      "combatDestroyEquipment": {
+        "title": "Zniszcz element wyposażenia celu",
+        "description": "Przy zadawaniu obrażeń zniszcz jeden używany przez cel element wyposażenia, np. broń."
+      },
+      "combatSufferStrain": {
+        "title": "Aktywna postać otrzymuje strain",
+        "description": "Za każdy wydany Threat aktywna postać otrzymuje 1 strain. Jeśli efekt jest opłacany Despairem, otrzymuje 1 strain."
+      },
+      "combatLoseManeuverBenefit": {
+        "title": "Utrata korzyści z wcześniejszego manewru",
+        "description": "Aktywna postać traci korzyść z wcześniejszego manewru, np. osłony lub Guarded Stance, dopóki nie wykona go ponownie."
+      },
+      "combatOpponentFreeManeuver": {
+        "title": "Przeciwnik wykonuje darmowy manewr",
+        "description": "Przeciwnik może natychmiast wykonać jeden darmowy manewr jako incidental w reakcji na test aktywnej postaci."
+      },
+      "combatTargetGetsBoost": {
+        "title": "Boost dla celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "combatAllySetback": {
+        "title": "Setback do następnej akcji",
+        "description": "Aktywna postać albo wybrany sojusznik otrzymuje kość Setback do swojej następnej akcji."
+      },
+      "combatFallProne": {
+        "title": "Aktywna postać przewraca się",
+        "description": "Aktywna postać upada i staje się prone."
+      },
+      "combatEnemyAdvantage": {
+        "title": "Daj przeciwnikowi znaczącą przewagę",
+        "description": "Aktywna postać daje przeciwnikowi istotną przewagę w walce, np. przypadkowo niszczy element otoczenia potrzebny do ucieczki."
+      },
+      "combatOutOfAmmo": {
+        "title": "Broń traci amunicję",
+        "description": "Broń aktywnej postaci natychmiast wyczerpuje amunicję i nie może być używana do końca spotkania."
+      },
+      "combatUpgradeAllyDifficulty": {
+        "title": "Ulepsz trudność testu sojusznika",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu sojusznika albo następnego testu aktywnej postaci."
+      },
+      "combatDamageWeaponTool": {
+        "title": "Uszkodź broń lub narzędzie",
+        "description": "Narzędzie albo używana przez aktywną postać broń Brawl/Melee zostaje uszkodzona."
+      }
+    },
+    "socialBuiltInTitle": "Spotkania społeczne — Social Encounters",
+    "combatBuiltInTitle": "Walka — Combat",
+    "encounterContext": "Kontekst",
+    "contexts": {
+      "social": "Spotkanie społeczne",
+      "combat": "Walka"
+    },
+    "decreaseCost": "Zmniejsz koszt",
+    "increaseCost": "Zwiększ koszt",
+    "invalidVariableCost": "Wybrano nieprawidłowy koszt wydania wyniku.",
+    "automation": {
+      "actorMissing": "Nie udało się ustalić aktywnej postaci dla tego rzutu. Strain nie został zmieniony.",
+      "strainUnavailable": "Postać {actor} nie posiada licznika Strain, więc tego efektu nie można zastosować automatycznie.",
+      "strainApplied": "Automatycznie zaktualizowano Strain postaci {actor}: {before} → {after}."
+    }
   }
 }

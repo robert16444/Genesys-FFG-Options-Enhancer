@@ -1,0 +1,91 @@
+<section class="gfoe-spend-config">
+  <p class="notes">{{intro}}</p>
+
+  <section class="gfoe-spend-config-section">
+    <h2>{{builtInTitle}}</h2>
+    <p class="notes">{{builtInHint}}</p>
+    <h3>{{socialBuiltInTitle}}</h3>
+    <div class="gfoe-builtins-list">
+      {{#each socialBuiltIns}}
+      <div class="gfoe-config-builtin">
+        <div class="gfoe-config-builtin-text">
+          <strong>{{title}}</strong>
+          <div class="notes">{{description}}</div>
+        </div>
+        <span class="gfoe-result-badge gfoe-result-{{symbol}}">{{cost}} × {{symbolLabel}}</span>
+      </div>
+      {{/each}}
+    </div>
+
+    <h3>{{combatBuiltInTitle}}</h3>
+    <div class="gfoe-builtins-list">
+      {{#each combatBuiltIns}}
+      <div class="gfoe-config-builtin">
+        <div class="gfoe-config-builtin-text">
+          <strong>{{title}}</strong>
+          <div class="notes">{{description}}</div>
+        </div>
+        <span class="gfoe-result-badge gfoe-result-{{symbol}}">{{cost}} × {{symbolLabel}}</span>
+      </div>
+      {{/each}}
+    </div>
+  </section>
+
+  <section class="gfoe-spend-config-section">
+    <div class="gfoe-config-section-heading">
+      <div>
+        <h2>{{customTitle}}</h2>
+        <p class="notes">{{customHint}}</p>
+      </div>
+      <div class="gfoe-config-heading-actions">
+        <button type="button" data-action="addCustom"><i class="fa-solid fa-plus"></i> {{addLabel}}</button>
+        <button type="button" data-action="clearCustom"><i class="fa-solid fa-broom"></i> {{clearLabel}}</button>
+      </div>
+    </div>
+
+    <div class="gfoe-custom-options-list">
+      {{#unless customOptions.length}}
+      <p class="notes gfoe-no-custom-options">{{noCustom}}</p>
+      {{/unless}}
+
+      {{#each customOptions}}
+      <article class="gfoe-custom-option" data-gfoe-custom-option data-option-id="{{id}}">
+        <div class="gfoe-custom-option-grid">
+          <label>
+            <span>{{../fieldName}}</span>
+            <input type="text" name="title" value="{{title}}" maxlength="160" />
+          </label>
+
+          <label>
+            <span>{{../fieldResult}}</span>
+            <select name="symbol">
+              <option value="advantage" {{#if isAdvantage}}selected{{/if}}>{{../symbolAdvantageLabel}}</option>
+              <option value="threat" {{#if isThreat}}selected{{/if}}>{{../symbolThreatLabel}}</option>
+              <option value="triumph" {{#if isTriumph}}selected{{/if}}>{{../symbolTriumphLabel}}</option>
+              <option value="despair" {{#if isDespair}}selected{{/if}}>{{../symbolDespairLabel}}</option>
+            </select>
+          </label>
+
+          <label>
+            <span>{{../fieldCost}}</span>
+            <input type="number" name="cost" value="{{cost}}" min="1" max="99" step="1" />
+          </label>
+
+          <button type="button" class="gfoe-custom-delete" data-action="deleteCustom" data-option-id="{{id}}" title="{{../deleteLabel}}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+
+        <label class="gfoe-custom-description">
+          <span>{{../fieldDescription}}</span>
+          <textarea name="description" rows="2" maxlength="600">{{description}}</textarea>
+        </label>
+      </article>
+      {{/each}}
+    </div>
+  </section>
+
+  <footer class="gfoe-config-footer">
+    <button type="submit"><i class="fa-solid fa-floppy-disk"></i> {{saveLabel}}</button>
+  </footer>
+</section>

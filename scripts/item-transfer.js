@@ -158,7 +158,7 @@ export function registerItemTransferFeature() {
             return onSendItemClicked(actor, id);
           }
         }
-      ]);
+      ], { jQuery: false });
       root.dataset.grrFallbackBound = "1";
     }
   };

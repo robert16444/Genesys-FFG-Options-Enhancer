@@ -3,6 +3,7 @@ import { RollRequestApp } from "./request-app.js";
 import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
 import { openTalentSearch } from "./talent-search.js";
+import { registerResultSpenderSettings, registerResultSpenderFeature, handleResultSpenderSocket } from "./result-spender.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -19,6 +20,11 @@ function isFeatureEnabled(key, fallback = true) {
 }
 
 Hooks.once("init", () => {
+  try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
+  // Register Spend Results chat rendering during init so roll messages get the
+  // remaining-results panel and its direct Spend Results button.
+  try { registerResultSpenderFeature(); } catch (e) { console.error(`${MODULE_ID} | result spender registration failed`, e); }
+
   try {
     game.settings.register(MODULE_ID, "activationCostLabel", {
       name: game.i18n?.localize?.("settings.activationCostLabelName") ?? "Activation cost label",
@@ -136,6 +142,11 @@ Hooks.once("ready", async () => {
         if (payload.toUser && payload.toUser !== game.user.id) return;
         await showPlayerPopup(payload);
         return;
+      }
+
+      if (isFeatureEnabled("enableResultSpender", true)) {
+        const handled = await handleResultSpenderSocket(payload);
+        if (handled) return;
       }
 
       if (isFeatureEnabled("enableItemSend", true)) {
@@ -366,8 +377,3 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', () => { try { if (isFeatureEnabled("enableCurrency", true)) registerCurrencyUIHook(); } catch(e){ console.error(e);} });
 
-
-Hooks.once("init", () => {
-  try {
-    } catch (e) { console.error(MODULE_ID, e); }
-});
