@@ -225,7 +225,7 @@
     "settingsTitle": "Spend Results Options",
     "settingsIntro": "Built-in options follow the standard result-spending tables for social encounters and combat. The module automatically selects the correct set depending on whether a started Combat is active on the current scene. GM custom options remain available in both modes.",
     "builtInTitle": "Built-in options",
-    "builtInHint": "Built-in options are selected automatically for the current context. They do not apply mechanical effects automatically; they track the spend and announce the chosen effect in chat.",
+    "builtInHint": "Built-in options are selected automatically for the current context. Supported Strain effects and next-check modifiers are applied automatically; other options track the spend and announce the chosen effect in chat.",
     "customTitle": "Custom spending options",
     "customHint": "Add your own result, cost, name, and optional description. Threat and Despair options are automatically GM-only.",
     "addCustom": "Add option",
@@ -271,8 +271,8 @@
         "description": "Learn either the Strength or the Flaw of the targeted character."
       },
       "socialTargetBoost": {
-        "title": "Boost the target's next check",
-        "description": "Add a Boost die to the targeted character's next check."
+        "title": "Setback on the target's next check",
+        "description": "Add a Setback die to the selected target/opponent's next check."
       },
       "socialAnyAllyBoost": {
         "title": "Boost any ally's next check",
@@ -375,8 +375,8 @@
         "description": "Immediately perform a free maneuver without exceeding the limit of two maneuvers per turn."
       },
       "combatTargetBoost": {
-        "title": "Boost the target's next check",
-        "description": "Add a Boost die to the targeted character's next check."
+        "title": "Setback on the target's next check",
+        "description": "Add a Setback die to the selected target/opponent's next check."
       },
       "combatAnyAllyBoost": {
         "title": "Boost any ally's next check",
@@ -476,7 +476,31 @@
     "automation": {
       "actorMissing": "Could not determine the active character for this roll. Strain was not changed.",
       "strainUnavailable": "{actor} does not have a Strain track, so this effect cannot be applied automatically.",
-      "strainApplied": "Automatically updated {actor}'s Strain: {before} → {after}."
-    }
+      "strainApplied": "Automatically updated {actor}'s Strain: {before} → {after}.",
+      "effectApplied": "Applied {effect} to {actor}. Total for the next check: {count}.",
+      "effectNames": {
+        "boost": "Boost",
+        "setback": "Setback",
+        "upgradeAbility": "Upgrade Ability",
+        "upgradeDifficulty": "Upgrade Difficulty"
+      },
+      "nextAllyQueued": "Queued {effect} for the next allied initiative slot. It will be applied when that slot is claimed.",
+      "nextAllyAppliedTitle": "Next allied slot claimed",
+      "nextAllyApplied": "Applied {effect} to {actor}. Total for the next check: {count}."
+    },
+    "targetLabel": "Effect target",
+    "noEligibleTarget": "There is no eligible character for this effect.",
+    "targetRequired": "Choose the character who should receive this effect.",
+    "targetInvalid": "The selected character is no longer a valid target for this effect.",
+    "nextAllySlotWaiting": "This effect will be applied automatically when the next allied initiative slot is claimed.",
+    "noNextAllySlot": "No eligible next allied initiative slot is available. Start an encounter and make sure initiative slots have the correct dispositions.",
+    "currentTargetLabel": "Current roll owner target",
+    "noCurrentTarget": "The owner of this roll is not currently targeting a token. Target exactly one token first.",
+    "multipleCurrentTargets": "The owner of this roll currently has multiple targets. Leave exactly one token targeted for this effect.",
+    "targetChanged": "The roll owner’s current target changed. Reopen Spend Results and try again.",
+    "nextAllySlotGeneric": "Next allied initiative slot"
+  },
+  "nextCheckEffects": {
+    "hudStackTooltip": "Left click: add 1 stack. Right click: remove 1 stack. Current: {count}."
   }
 }

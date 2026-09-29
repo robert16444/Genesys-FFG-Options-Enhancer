@@ -4,6 +4,13 @@ import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
 import { openTalentSearch } from "./talent-search.js";
 import { registerResultSpenderSettings, registerResultSpenderFeature, handleResultSpenderSocket } from "./result-spender.js";
+import { registerVisionStatusEffects } from "./status-effects.js";
+import {
+  registerNextCheckRollAutomation,
+  registerPendingNextAllySlotAutomation,
+  registerNextCheckStatusCounterIntegration,
+  applyNextCheckDifficultyUpgradeToPool
+} from "./next-check-effects.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -116,8 +123,24 @@ Hooks.once("init", () => {
   });
 });
 
+
+Hooks.once("setup", () => {
+  try {
+    registerVisionStatusEffects();
+  } catch (e) {
+    console.error(`${MODULE_ID} | vision status effects registration failed`, e);
+  }
+});
+
 Hooks.once("ready", async () => {
   dbg("ready", { user: game.user?.name, id: game.user?.id, isGM: game.user?.isGM });
+
+  try { registerVisionStatusEffects(); } catch (e) { console.error(`${MODULE_ID} | vision status effects refresh failed`, e); }
+  try { registerNextCheckStatusCounterIntegration(); } catch (e) { console.error(`${MODULE_ID} | Status Counter integration registration failed`, e); }
+  try { registerNextCheckRollAutomation(); } catch (e) { console.error(`${MODULE_ID} | next-check roll automation registration failed`, e); }
+  if (isFeatureEnabled("enableResultSpender", true)) {
+    try { registerPendingNextAllySlotAutomation(); } catch (e) { console.error(`${MODULE_ID} | pending next-ally slot automation registration failed`, e); }
+  }
 
   if (isFeatureEnabled("enableItemSend", true)) {
     try { registerItemTransferFeature(); } catch (e) { console.error(`${MODULE_ID} | item transfer registration failed`, e); }
@@ -313,11 +336,13 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
     threat: Number(skill?.threat ?? 0),
     success: Number(skill?.success ?? 0),
     triumph: Number(skill?.triumph ?? 0),
+    upgrades: Number(skill?.upgrades ?? 0),
     difficulty: finalPurple,
     challenge: finalRed
   });
 
   try { dicePool.upgrade(baseUpgrades + (dicePool.upgrades ?? 0)); } catch (e) {}
+  try { applyNextCheckDifficultyUpgradeToPool(actor, dicePool); } catch (e) { console.warn(`${MODULE_ID} | failed to apply requested next-check difficulty upgrade`, e); }
 
   const skillLabel = skill?.label ?? skillKey;
   const description = `${label ?? `Rolling ${skillLabel}`}`;
@@ -328,6 +353,8 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
     if (sheet && typeof sheet.getData === "function") rollData = await sheet.getData();
   } catch (e) {}
   if (!rollData) rollData = { actor, data: { skills: skillsRoot, characteristics: charsRoot } };
+  rollData.document ??= actor;
+  rollData.actor ??= { _id: actor.id };
 
   const requestedMode = rollMode ?? "publicroll";
   let previousMode;

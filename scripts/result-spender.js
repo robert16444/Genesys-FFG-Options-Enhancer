@@ -1,4 +1,11 @@
 import { Lang } from "./i18n.js";
+import {
+  applyStackableNextCheckEffect,
+  rollbackStackableNextCheckEffect,
+  findNextAlliedInitiativeSlot,
+  queueNextAlliedSlotEffect,
+  rollbackPendingNextAlliedSlotEffect
+} from "./next-check-effects.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const FEATURE_SETTING = "enableResultSpender";
@@ -18,48 +25,48 @@ const MSG = {
 
 const SOCIAL_OPTION_DEFINITIONS = Object.freeze([
   { id: "social-recover-strain", costs: { advantage: 1, triumph: 1 }, automation: { type: "strain", delta: -1 }, titleKey: "resultSpender.builtins.socialRecoverStrain.title", descriptionKey: "resultSpender.builtins.socialRecoverStrain.description" },
-  { id: "social-next-ally-boost", costs: { advantage: 1, triumph: 1 }, titleKey: "resultSpender.builtins.socialNextAllyBoost.title", descriptionKey: "resultSpender.builtins.socialNextAllyBoost.description" },
+  { id: "social-next-ally-boost", costs: { advantage: 1, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "nextAllySlot" }, titleKey: "resultSpender.builtins.socialNextAllyBoost.title", descriptionKey: "resultSpender.builtins.socialNextAllyBoost.description" },
   { id: "social-notice-detail", costs: { advantage: 1, triumph: 1 }, titleKey: "resultSpender.builtins.socialNoticeDetail.title", descriptionKey: "resultSpender.builtins.socialNoticeDetail.description" },
 
   { id: "social-learn-strength-flaw", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.socialLearnStrengthFlaw.title", descriptionKey: "resultSpender.builtins.socialLearnStrengthFlaw.description" },
-  { id: "social-target-boost", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.socialTargetBoost.title", descriptionKey: "resultSpender.builtins.socialTargetBoost.description" },
-  { id: "social-any-ally-boost", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.socialAnyAllyBoost.title", descriptionKey: "resultSpender.builtins.socialAnyAllyBoost.description" },
+  { id: "social-target-boost", costs: { advantage: 2, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "setback", targetMode: "targeted" }, titleKey: "resultSpender.builtins.socialTargetBoost.title", descriptionKey: "resultSpender.builtins.socialTargetBoost.description" },
+  { id: "social-any-ally-boost", costs: { advantage: 2, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "ally" }, titleKey: "resultSpender.builtins.socialAnyAllyBoost.title", descriptionKey: "resultSpender.builtins.socialAnyAllyBoost.description" },
 
   { id: "social-learn-desire-fear", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.socialLearnDesireFear.title", descriptionKey: "resultSpender.builtins.socialLearnDesireFear.description" },
   { id: "social-conceal-goal", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.socialConcealGoal.title", descriptionKey: "resultSpender.builtins.socialConcealGoal.description" },
   { id: "social-learn-true-goal", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.socialLearnTrueGoal.title", descriptionKey: "resultSpender.builtins.socialLearnTrueGoal.description" },
 
   { id: "social-learn-motivation", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.socialLearnMotivation.title", descriptionKey: "resultSpender.builtins.socialLearnMotivation.description" },
-  { id: "social-upgrade-target-difficulty", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.socialUpgradeTargetDifficulty.title", descriptionKey: "resultSpender.builtins.socialUpgradeTargetDifficulty.description" },
-  { id: "social-upgrade-ally-ability", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.socialUpgradeAllyAbility.title", descriptionKey: "resultSpender.builtins.socialUpgradeAllyAbility.description" },
+  { id: "social-upgrade-target-difficulty", costs: { triumph: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeDifficulty", targetMode: "targeted" }, titleKey: "resultSpender.builtins.socialUpgradeTargetDifficulty.title", descriptionKey: "resultSpender.builtins.socialUpgradeTargetDifficulty.description" },
+  { id: "social-upgrade-ally-ability", costs: { triumph: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeAbility", targetMode: "ally" }, titleKey: "resultSpender.builtins.socialUpgradeAllyAbility.title", descriptionKey: "resultSpender.builtins.socialUpgradeAllyAbility.description" },
   { id: "social-do-vital", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.socialDoVital.title", descriptionKey: "resultSpender.builtins.socialDoVital.description" },
 
   { id: "social-suffer-strain", costs: { threat: { cost: 1, variable: true, scaleAutomation: true }, despair: 1 }, automation: { type: "strain", delta: 1 }, titleKey: "resultSpender.builtins.socialSufferStrain.title", descriptionKey: "resultSpender.builtins.socialSufferStrain.description" },
   { id: "social-distracted", costs: { threat: 1, despair: 1 }, titleKey: "resultSpender.builtins.socialDistracted.title", descriptionKey: "resultSpender.builtins.socialDistracted.description" },
 
   { id: "social-reveal-strength-flaw", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.socialRevealStrengthFlaw.title", descriptionKey: "resultSpender.builtins.socialRevealStrengthFlaw.description" },
-  { id: "social-target-gets-boost", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.socialTargetGetsBoost.title", descriptionKey: "resultSpender.builtins.socialTargetGetsBoost.description" },
-  { id: "social-ally-setback", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.socialAllySetback.title", descriptionKey: "resultSpender.builtins.socialAllySetback.description" },
+  { id: "social-target-gets-boost", costs: { threat: 2, despair: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "targeted" }, titleKey: "resultSpender.builtins.socialTargetGetsBoost.title", descriptionKey: "resultSpender.builtins.socialTargetGetsBoost.description" },
+  { id: "social-ally-setback", costs: { threat: 2, despair: 1 }, automation: { type: "nextCheckEffect", effect: "setback", targetMode: "ally" }, titleKey: "resultSpender.builtins.socialAllySetback.title", descriptionKey: "resultSpender.builtins.socialAllySetback.description" },
 
   { id: "social-reveal-desire-fear", costs: { threat: 3, despair: 1 }, titleKey: "resultSpender.builtins.socialRevealDesireFear.title", descriptionKey: "resultSpender.builtins.socialRevealDesireFear.description" },
   { id: "social-reveal-goal", costs: { threat: 3, despair: 1 }, titleKey: "resultSpender.builtins.socialRevealGoal.title", descriptionKey: "resultSpender.builtins.socialRevealGoal.description" },
 
   { id: "social-reveal-ally-motivation", costs: { despair: 1 }, titleKey: "resultSpender.builtins.socialRevealAllyMotivation.title", descriptionKey: "resultSpender.builtins.socialRevealAllyMotivation.description" },
   { id: "social-false-motivation", costs: { despair: 1 }, titleKey: "resultSpender.builtins.socialFalseMotivation.title", descriptionKey: "resultSpender.builtins.socialFalseMotivation.description" },
-  { id: "social-upgrade-ally-difficulty", costs: { despair: 1 }, titleKey: "resultSpender.builtins.socialUpgradeAllyDifficulty.title", descriptionKey: "resultSpender.builtins.socialUpgradeAllyDifficulty.description" },
+  { id: "social-upgrade-ally-difficulty", costs: { despair: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeDifficulty", targetMode: "ally" }, titleKey: "resultSpender.builtins.socialUpgradeAllyDifficulty.title", descriptionKey: "resultSpender.builtins.socialUpgradeAllyDifficulty.description" },
   { id: "social-lose-next-round", costs: { despair: 1 }, titleKey: "resultSpender.builtins.socialLoseNextRound.title", descriptionKey: "resultSpender.builtins.socialLoseNextRound.description" }
 ]);
 
 const COMBAT_OPTION_DEFINITIONS = Object.freeze([
   { id: "combat-recover-strain", costs: { advantage: 1, triumph: 1 }, automation: { type: "strain", delta: -1 }, titleKey: "resultSpender.builtins.combatRecoverStrain.title", descriptionKey: "resultSpender.builtins.combatRecoverStrain.description" },
-  { id: "combat-next-ally-boost", costs: { advantage: 1, triumph: 1 }, titleKey: "resultSpender.builtins.combatNextAllyBoost.title", descriptionKey: "resultSpender.builtins.combatNextAllyBoost.description" },
+  { id: "combat-next-ally-boost", costs: { advantage: 1, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "nextAllySlot" }, titleKey: "resultSpender.builtins.combatNextAllyBoost.title", descriptionKey: "resultSpender.builtins.combatNextAllyBoost.description" },
   { id: "combat-notice-detail", costs: { advantage: 1, triumph: 1 }, titleKey: "resultSpender.builtins.combatNoticeDetail.title", descriptionKey: "resultSpender.builtins.combatNoticeDetail.description" },
   { id: "combat-critical-injury", costs: { advantage: { cost: 1, variable: true }, triumph: 1 }, titleKey: "resultSpender.builtins.combatCriticalInjury.title", descriptionKey: "resultSpender.builtins.combatCriticalInjury.description" },
   { id: "combat-item-quality", costs: { advantage: { cost: 1, variable: true }, triumph: 1 }, titleKey: "resultSpender.builtins.combatItemQuality.title", descriptionKey: "resultSpender.builtins.combatItemQuality.description" },
 
   { id: "combat-free-maneuver", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.combatFreeManeuver.title", descriptionKey: "resultSpender.builtins.combatFreeManeuver.description" },
-  { id: "combat-target-boost", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.combatTargetBoost.title", descriptionKey: "resultSpender.builtins.combatTargetBoost.description" },
-  { id: "combat-any-ally-boost", costs: { advantage: 2, triumph: 1 }, titleKey: "resultSpender.builtins.combatAnyAllyBoost.title", descriptionKey: "resultSpender.builtins.combatAnyAllyBoost.description" },
+  { id: "combat-target-boost", costs: { advantage: 2, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "setback", targetMode: "targeted" }, titleKey: "resultSpender.builtins.combatTargetBoost.title", descriptionKey: "resultSpender.builtins.combatTargetBoost.description" },
+  { id: "combat-any-ally-boost", costs: { advantage: 2, triumph: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "ally" }, titleKey: "resultSpender.builtins.combatAnyAllyBoost.title", descriptionKey: "resultSpender.builtins.combatAnyAllyBoost.description" },
 
   { id: "combat-negate-defense", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.combatNegateDefense.title", descriptionKey: "resultSpender.builtins.combatNegateDefense.description" },
   { id: "combat-ignore-environment", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.combatIgnoreEnvironment.title", descriptionKey: "resultSpender.builtins.combatIgnoreEnvironment.description" },
@@ -67,8 +74,8 @@ const COMBAT_OPTION_DEFINITIONS = Object.freeze([
   { id: "combat-gain-defense", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.combatGainDefense.title", descriptionKey: "resultSpender.builtins.combatGainDefense.description" },
   { id: "combat-drop-weapon", costs: { advantage: 3, triumph: 1 }, titleKey: "resultSpender.builtins.combatDropWeapon.title", descriptionKey: "resultSpender.builtins.combatDropWeapon.description" },
 
-  { id: "combat-upgrade-target-difficulty", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.combatUpgradeTargetDifficulty.title", descriptionKey: "resultSpender.builtins.combatUpgradeTargetDifficulty.description" },
-  { id: "combat-upgrade-ally-ability", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.combatUpgradeAllyAbility.title", descriptionKey: "resultSpender.builtins.combatUpgradeAllyAbility.description" },
+  { id: "combat-upgrade-target-difficulty", costs: { triumph: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeDifficulty", targetMode: "targeted" }, titleKey: "resultSpender.builtins.combatUpgradeTargetDifficulty.title", descriptionKey: "resultSpender.builtins.combatUpgradeTargetDifficulty.description" },
+  { id: "combat-upgrade-ally-ability", costs: { triumph: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeAbility", targetMode: "ally" }, titleKey: "resultSpender.builtins.combatUpgradeAllyAbility.title", descriptionKey: "resultSpender.builtins.combatUpgradeAllyAbility.description" },
   { id: "combat-do-vital", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.combatDoVital.title", descriptionKey: "resultSpender.builtins.combatDoVital.description" },
   { id: "combat-initiative-maneuver", costs: { triumph: 1 }, titleKey: "resultSpender.builtins.combatInitiativeManeuver.title", descriptionKey: "resultSpender.builtins.combatInitiativeManeuver.description" },
   { id: "combat-destroy-equipment", costs: { triumph: 2 }, titleKey: "resultSpender.builtins.combatDestroyEquipment.title", descriptionKey: "resultSpender.builtins.combatDestroyEquipment.description" },
@@ -77,14 +84,14 @@ const COMBAT_OPTION_DEFINITIONS = Object.freeze([
   { id: "combat-lose-maneuver-benefit", costs: { threat: 1, despair: 1 }, titleKey: "resultSpender.builtins.combatLoseManeuverBenefit.title", descriptionKey: "resultSpender.builtins.combatLoseManeuverBenefit.description" },
 
   { id: "combat-opponent-free-maneuver", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.combatOpponentFreeManeuver.title", descriptionKey: "resultSpender.builtins.combatOpponentFreeManeuver.description" },
-  { id: "combat-target-gets-boost", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.combatTargetGetsBoost.title", descriptionKey: "resultSpender.builtins.combatTargetGetsBoost.description" },
-  { id: "combat-ally-setback", costs: { threat: 2, despair: 1 }, titleKey: "resultSpender.builtins.combatAllySetback.title", descriptionKey: "resultSpender.builtins.combatAllySetback.description" },
+  { id: "combat-target-gets-boost", costs: { threat: 2, despair: 1 }, automation: { type: "nextCheckEffect", effect: "boost", targetMode: "targeted" }, titleKey: "resultSpender.builtins.combatTargetGetsBoost.title", descriptionKey: "resultSpender.builtins.combatTargetGetsBoost.description" },
+  { id: "combat-ally-setback", costs: { threat: 2, despair: 1 }, automation: { type: "nextCheckEffect", effect: "setback", targetMode: "ally" }, titleKey: "resultSpender.builtins.combatAllySetback.title", descriptionKey: "resultSpender.builtins.combatAllySetback.description" },
 
   { id: "combat-fall-prone", costs: { threat: 3, despair: 1 }, titleKey: "resultSpender.builtins.combatFallProne.title", descriptionKey: "resultSpender.builtins.combatFallProne.description" },
   { id: "combat-enemy-advantage", costs: { threat: 3, despair: 1 }, titleKey: "resultSpender.builtins.combatEnemyAdvantage.title", descriptionKey: "resultSpender.builtins.combatEnemyAdvantage.description" },
 
   { id: "combat-out-of-ammo", costs: { despair: 1 }, titleKey: "resultSpender.builtins.combatOutOfAmmo.title", descriptionKey: "resultSpender.builtins.combatOutOfAmmo.description" },
-  { id: "combat-upgrade-ally-difficulty", costs: { despair: 1 }, titleKey: "resultSpender.builtins.combatUpgradeAllyDifficulty.title", descriptionKey: "resultSpender.builtins.combatUpgradeAllyDifficulty.description" },
+  { id: "combat-upgrade-ally-difficulty", costs: { despair: 1 }, automation: { type: "nextCheckEffect", effect: "upgradeDifficulty", targetMode: "ally" }, titleKey: "resultSpender.builtins.combatUpgradeAllyDifficulty.title", descriptionKey: "resultSpender.builtins.combatUpgradeAllyDifficulty.description" },
   { id: "combat-damage-weapon-tool", costs: { despair: 1 }, titleKey: "resultSpender.builtins.combatDamageWeaponTool.title", descriptionKey: "resultSpender.builtins.combatDamageWeaponTool.description" }
 ]);
 
@@ -366,6 +373,14 @@ function getAllOptions() {
   return [...getBuiltInOptions(), ...getCustomOptions()];
 }
 
+function getOptionById(optionId) {
+  return [
+    ...getBuiltInOptions("social"),
+    ...getBuiltInOptions("combat"),
+    ...getCustomOptions()
+  ].find(entry => entry.id === optionId) ?? null;
+}
+
 function sanitizeCustomOption(option) {
   if (!option || typeof option !== "object") return null;
   const symbol = SYMBOLS.includes(option.symbol) ? option.symbol : null;
@@ -429,6 +444,179 @@ function canUserSpendFromMessage(user, message) {
   } catch (_) {
     return false;
   }
+}
+
+function resolveRollScene(message) {
+  const speaker = message?.speaker ?? {};
+  const sceneId = typeof speaker.scene === "string" ? speaker.scene : speaker.scene?.id;
+  return (sceneId ? game.scenes?.get(sceneId) : null)
+    ?? globalThis.canvas?.scene
+    ?? game.scenes?.current
+    ?? null;
+}
+
+function resolveRollTokenDocument(message) {
+  const speaker = message?.speaker ?? {};
+  const tokenId = typeof speaker.token === "string" ? speaker.token : speaker.token?.id;
+  if (!tokenId) return null;
+
+  const scene = resolveRollScene(message);
+  return scene?.tokens?.get?.(tokenId)
+    ?? globalThis.canvas?.tokens?.get?.(tokenId)?.document
+    ?? null;
+}
+
+function relationMatchesTargetMode(originToken, originActor, candidateToken, candidateActor, targetMode, requester) {
+  if (targetMode === "any") return true;
+  if (!candidateActor) return false;
+
+  const originDisposition = Number(originToken?.disposition);
+  const candidateDisposition = Number(candidateToken?.disposition);
+  if (Number.isFinite(originDisposition) && Number.isFinite(candidateDisposition)) {
+    const sameSide = originDisposition === candidateDisposition;
+    return targetMode === "ally" ? sameSide : !sameSide;
+  }
+
+  // Fallback for rolls not associated with a token: actors with the same
+  // player-owner character are treated as allies, the rest as opponents.
+  if (originActor) {
+    const sameSide = Boolean(originActor.hasPlayerOwner) === Boolean(candidateActor.hasPlayerOwner);
+    return targetMode === "ally" ? sameSide : !sameSide;
+  }
+
+  return Boolean(requester?.isGM || targetMode !== "opponent");
+}
+
+function canRequesterSeeTarget(requester, tokenDocument, actor) {
+  if (requester?.isGM) return true;
+  if (tokenDocument && tokenDocument.hidden) return false;
+  if (tokenDocument) return true;
+  try {
+    return Boolean(actor?.testUserPermission?.(requester, "OBSERVER"));
+  } catch (_) {
+    return Boolean(actor?.hasPlayerOwner);
+  }
+}
+
+function targetLabel(tokenDocument, actor) {
+  const tokenName = String(tokenDocument?.name ?? "").trim();
+  const actorName = String(actor?.name ?? "").trim();
+  if (tokenName && actorName && tokenName !== actorName) return `${tokenName} (${actorName})`;
+  return tokenName || actorName || "Actor";
+}
+
+function getMessageAuthorUser(message) {
+  const raw = message?.author ?? message?.user ?? null;
+  if (raw?.id) return raw;
+  const id = typeof raw === "string" ? raw : getMessageAuthorId(message);
+  return id ? game.users?.get?.(id) ?? null : null;
+}
+
+function getUserTargetTokenDocuments(user, message) {
+  if (!user) return [];
+  const out = [];
+  const seen = new Set();
+  const add = tokenLike => {
+    const doc = tokenLike?.document ?? tokenLike;
+    if (!doc?.id) return;
+    const scene = doc.parent?.documentName === "Scene" ? doc.parent : null;
+    const ref = doc.uuid ?? (scene ? `Scene.${scene.id}.Token.${doc.id}` : doc.id);
+    if (seen.has(ref)) return;
+    seen.add(ref);
+    out.push(doc);
+  };
+
+  try {
+    for (const target of Array.from(user.targets ?? [])) add(target);
+  } catch (_) {}
+
+  const ids = Array.from(user.targets?.ids ?? []);
+  if (ids.length) {
+    const scene = resolveRollScene(message) ?? globalThis.canvas?.scene;
+    for (const id of ids) {
+      const tokenDoc = scene?.tokens?.get?.(id) ?? globalThis.canvas?.tokens?.get?.(id)?.document;
+      if (tokenDoc) add(tokenDoc);
+    }
+  }
+
+  return out;
+}
+
+function buildCurrentRollOwnerTargetChoices(message) {
+  const owner = getMessageAuthorUser(message);
+  if (!owner) return [];
+  return getUserTargetTokenDocuments(owner, message)
+    .filter(tokenDocument => tokenDocument?.actor)
+    .map(tokenDocument => ({
+      ref: tokenDocument.uuid,
+      label: targetLabel(tokenDocument, tokenDocument.actor),
+      actor: tokenDocument.actor,
+      tokenDocument
+    }));
+}
+
+function buildTargetChoices(message, automation, requester = game.user) {
+  if (automation?.type !== "nextCheckEffect") return [];
+
+  const targetMode = automation.targetMode ?? "any";
+  if (targetMode === "targeted") return buildCurrentRollOwnerTargetChoices(message);
+  if (targetMode === "nextAllySlot") return [];
+  const scene = resolveRollScene(message);
+  const originToken = resolveRollTokenDocument(message);
+  const originActor = resolveRollActor(message);
+  const choices = [];
+  const seen = new Set();
+
+  for (const tokenDocument of Array.from(scene?.tokens ?? [])) {
+    const actor = tokenDocument?.actor;
+    if (!actor) continue;
+    if (!canRequesterSeeTarget(requester, tokenDocument, actor)) continue;
+    if (!relationMatchesTargetMode(originToken, originActor, tokenDocument, actor, targetMode, requester)) continue;
+
+    const ref = tokenDocument.uuid;
+    if (!ref || seen.has(ref)) continue;
+    seen.add(ref);
+    choices.push({ ref, label: targetLabel(tokenDocument, actor), actor, tokenDocument });
+  }
+
+  if (!choices.length) {
+    for (const actor of Array.from(game.actors ?? [])) {
+      if (!actor || !canRequesterSeeTarget(requester, null, actor)) continue;
+      if (!relationMatchesTargetMode(originToken, originActor, null, actor, targetMode, requester)) continue;
+      const ref = actor.uuid;
+      if (!ref || seen.has(ref)) continue;
+      seen.add(ref);
+      choices.push({ ref, label: actor.name || "Actor", actor, tokenDocument: null });
+    }
+  }
+
+  return choices.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function resolveValidatedTarget(message, automation, requester, targetRef) {
+  if (automation?.type !== "nextCheckEffect") return null;
+  if (automation.targetMode === "nextAllySlot") return null;
+  const choices = buildTargetChoices(message, automation, requester);
+  return choices.find(choice => choice.ref === targetRef) ?? null;
+}
+
+function getAutomationTargetUiState(message, automation, requester = game.user) {
+  if (automation?.type !== "nextCheckEffect") return { kind: "none", available: true, choices: [], targetRef: null };
+
+  const mode = automation.targetMode ?? "any";
+  if (mode === "nextAllySlot") {
+    const slot = findNextAlliedInitiativeSlot(message);
+    return { kind: "nextAllySlot", available: Boolean(slot), choices: [], targetRef: null, slot };
+  }
+
+  if (mode === "targeted") {
+    const choices = buildCurrentRollOwnerTargetChoices(message);
+    if (choices.length !== 1) return { kind: "targeted", available: false, choices, targetRef: null };
+    return { kind: "targeted", available: true, choices, targetRef: choices[0].ref, selected: choices[0] };
+  }
+
+  const choices = buildTargetChoices(message, automation, requester);
+  return { kind: "select", available: choices.length > 0, choices, targetRef: choices[0]?.ref ?? null };
 }
 
 function extractRollResults(message) {
@@ -555,6 +743,11 @@ async function openSpendDialog(message) {
   const groupsHtml = grouped.map(group => {
     const rows = group.options.map(option => {
       const affordable = remaining[option.symbol] >= option.cost;
+      const needsTarget = option.automation?.type === "nextCheckEffect";
+      const targetState = needsTarget ? getAutomationTargetUiState(message, option.automation, game.user) : { kind: "none", available: true, choices: [] };
+      const targetChoices = targetState.choices ?? [];
+      const targetAvailable = !needsTarget || targetState.available;
+      const canSpend = affordable && targetAvailable;
       const costControl = option.variableCost && affordable
         ? `<div class="gfoe-variable-spend-cost" data-gfoe-variable-cost data-min="${option.cost}" data-max="${remaining[option.symbol]}">
             <button type="button" data-gfoe-cost-step="-1" disabled aria-label="${escapeHtml(Lang.t("resultSpender.decreaseCost"))}">−</button>
@@ -563,15 +756,41 @@ async function openSpendDialog(message) {
             <span>× ${escapeHtml(symbolShort(option.symbol))}</span>
           </div>`
         : `<span class="gfoe-result-badge gfoe-result-${option.symbol}">${option.cost}${option.variableCost ? "+" : ""} × ${escapeHtml(symbolShort(option.symbol))}</span>`;
+      let targetControl = "";
+      if (needsTarget) {
+        if (targetState.kind === "nextAllySlot") {
+          targetControl = targetState.available
+            ? `<div class="gfoe-spend-auto-target"><i class="fa-solid fa-hourglass-half"></i> ${escapeHtml(Lang.t("resultSpender.nextAllySlotWaiting"))}</div>`
+            : `<div class="gfoe-spend-no-target">${escapeHtml(Lang.t("resultSpender.noNextAllySlot"))}</div>`;
+        } else if (targetState.kind === "targeted") {
+          if (targetState.available) {
+            targetControl = `<div class="gfoe-spend-auto-target"><i class="fa-solid fa-crosshairs"></i> ${escapeHtml(Lang.t("resultSpender.currentTargetLabel"))}: <b>${escapeHtml(targetState.selected.label)}</b><input type="hidden" data-gfoe-target-ref value="${escapeHtml(targetState.selected.ref)}"></div>`;
+          } else if (targetChoices.length > 1) {
+            targetControl = `<div class="gfoe-spend-no-target">${escapeHtml(Lang.t("resultSpender.multipleCurrentTargets"))}</div>`;
+          } else {
+            targetControl = `<div class="gfoe-spend-no-target">${escapeHtml(Lang.t("resultSpender.noCurrentTarget"))}</div>`;
+          }
+        } else {
+          targetControl = targetChoices.length
+            ? `<label class="gfoe-spend-target">
+                <span>${escapeHtml(Lang.t("resultSpender.targetLabel"))}</span>
+                <select data-gfoe-target-ref>
+                  ${targetChoices.map(choice => `<option value="${escapeHtml(choice.ref)}">${escapeHtml(choice.label)}</option>`).join("")}
+                </select>
+              </label>`
+            : `<div class="gfoe-spend-no-target">${escapeHtml(Lang.t("resultSpender.noEligibleTarget"))}</div>`;
+        }
+      }
       return `
-        <div class="gfoe-spend-option ${affordable ? "" : "is-unaffordable"}">
+        <div class="gfoe-spend-option ${canSpend ? "" : "is-unaffordable"}">
           <div class="gfoe-spend-option-main">
             <div class="gfoe-spend-option-title">${escapeHtml(option.title)}</div>
             ${option.description ? `<div class="gfoe-spend-option-description">${escapeHtml(option.description)}</div>` : ""}
+            ${targetControl}
           </div>
           <div class="gfoe-spend-option-actions">
             ${costControl}
-            <button type="button" data-gfoe-spend-option="${escapeHtml(option.id)}" ${affordable ? "" : "disabled"}>${escapeHtml(Lang.t("resultSpender.spend"))}</button>
+            <button type="button" data-gfoe-spend-option="${escapeHtml(option.id)}" ${canSpend ? "" : "disabled"}>${escapeHtml(Lang.t("resultSpender.spend"))}</button>
           </div>
         </div>`;
     }).join("");
@@ -654,10 +873,11 @@ async function openSpendDialog(message) {
           const requestedCost = variableValue
             ? Number.parseInt(variableValue.dataset.value ?? variableValue.textContent ?? "", 10)
             : null;
+          const targetRef = optionRow?.querySelector?.("[data-gfoe-target-ref]")?.value ?? null;
 
           event.currentTarget.disabled = true;
           try {
-            await requestSpend(message.id, optionId, requestedCost);
+            await requestSpend(message.id, optionId, requestedCost, targetRef);
             await app.close();
           } catch (err) {
             event.currentTarget.disabled = false;
@@ -670,7 +890,7 @@ async function openSpendDialog(message) {
   });
 }
 
-async function requestSpend(messageId, optionId, requestedCost = null) {
+async function requestSpend(messageId, optionId, requestedCost = null, targetRef = null) {
   const primaryGM = getPrimaryGM();
   if (!primaryGM) {
     ui.notifications?.error(Lang.t("resultSpender.noGM"));
@@ -683,6 +903,7 @@ async function requestSpend(messageId, optionId, requestedCost = null) {
     messageId,
     optionId,
     requestedCost,
+    targetRef,
     requestingUserId: game.user.id
   };
 
@@ -706,10 +927,22 @@ async function processSpendRequest(payload) {
   if (!isEnabled()) return feedback(Lang.t("resultSpender.disabled"));
   if (!canUserSpendFromMessage(requester, message)) return feedback(Lang.t("resultSpender.noPermission"));
 
-  const option = getAllOptions().find(entry => entry.id === payload.optionId);
+  const option = getOptionById(payload.optionId);
   if (!option) return feedback(Lang.t("resultSpender.optionMissing"));
   if (!requester.isGM && NEGATIVE_SYMBOLS.has(option.symbol)) return feedback(Lang.t("resultSpender.gmOnlyNegative"));
   if (!requester.isGM && !POSITIVE_SYMBOLS.has(option.symbol)) return feedback(Lang.t("resultSpender.noPermission"));
+
+  let automationTarget = null;
+  if (option.automation?.type === "nextCheckEffect") {
+    const targetMode = option.automation.targetMode ?? "any";
+    if (targetMode === "nextAllySlot") {
+      if (!findNextAlliedInitiativeSlot(message)) return feedback(Lang.t("resultSpender.noNextAllySlot"));
+    } else {
+      if (!payload.targetRef) return feedback(targetMode === "targeted" ? Lang.t("resultSpender.noCurrentTarget") : Lang.t("resultSpender.targetRequired"));
+      automationTarget = resolveValidatedTarget(message, option.automation, requester, payload.targetRef);
+      if (!automationTarget) return feedback(targetMode === "targeted" ? Lang.t("resultSpender.targetChanged") : Lang.t("resultSpender.targetInvalid"));
+    }
+  }
 
   const requestedCost = Number.parseInt(payload.requestedCost, 10);
   const spendCost = option.variableCost
@@ -746,7 +979,9 @@ async function processSpendRequest(payload) {
       optionId: option.id,
       optionTitle: option.title,
       symbol: option.symbol,
-      cost: spendCost
+      cost: spendCost,
+      targetRef: automationTarget?.ref ?? null,
+      targetName: automationTarget?.label ?? null
     });
     state.history = state.history.slice(-MAX_HISTORY);
 
@@ -757,7 +992,7 @@ async function processSpendRequest(payload) {
       await message.setFlag(MODULE_ID, FLAG_KEY, state);
       flagWritten = true;
 
-      automationResult = await applyOptionAutomation(message, { ...option, cost: spendCost });
+      automationResult = await applyOptionAutomation(message, { ...option, cost: spendCost }, automationTarget);
       await postSpendChatMessage(message, requester, { ...option, cost: spendCost }, after, automationResult);
     } catch (err) {
       if (automationResult) {
@@ -808,9 +1043,37 @@ function resolveRollActor(message) {
   return null;
 }
 
-async function applyOptionAutomation(message, option) {
+async function applyOptionAutomation(message, option, targetChoice = null) {
   const automation = option?.automation;
   if (!automation) return null;
+
+  if (automation.type === "nextCheckEffect") {
+    if (automation.targetMode === "nextAllySlot") {
+      const pendingResult = await queueNextAlliedSlotEffect(message, automation.effect, 1);
+      return {
+        type: "pendingNextAllySlot",
+        effectKind: automation.effect,
+        pendingResult,
+        slotLabel: pendingResult.slotLabel,
+        targetRound: pendingResult.targetRound
+      };
+    }
+
+    const actor = targetChoice?.actor;
+    if (!actor) throw new Error(Lang.t("resultSpender.targetRequired"));
+
+    const stackResult = await applyStackableNextCheckEffect(actor, automation.effect, 1);
+    return {
+      type: "nextCheckEffect",
+      actor,
+      actorName: targetChoice?.label || actor.name || "Actor",
+      effectKind: automation.effect,
+      previousCount: stackResult.previousCount,
+      newCount: stackResult.newCount,
+      stackResult
+    };
+  }
+
   if (automation.type !== "strain") return null;
 
   const actor = resolveRollActor(message);
@@ -852,8 +1115,25 @@ async function applyOptionAutomation(message, option) {
 }
 
 async function rollbackOptionAutomation(result) {
-  if (!result || result.type !== "strain" || !result.actor) return;
-  await result.actor.update({ "system.stats.strain.value": result.previousValue });
+  if (!result) return;
+
+  if (result.type === "strain" && result.actor) {
+    await result.actor.update({ "system.stats.strain.value": result.previousValue });
+    return;
+  }
+
+  if (result.type === "nextCheckEffect" && result.stackResult) {
+    await rollbackStackableNextCheckEffect(result.stackResult);
+    return;
+  }
+
+  if (result.type === "pendingNextAllySlot" && result.pendingResult) {
+    await rollbackPendingNextAlliedSlotEffect(result.pendingResult);
+  }
+}
+
+function automatedEffectLabel(kind) {
+  return Lang.t(`resultSpender.automation.effectNames.${kind}`);
 }
 
 function getRemainingFromState(state) {
@@ -878,6 +1158,8 @@ async function postSpendChatMessage(sourceMessage, requester, option, remaining,
       })}</div>
       ${option.description ? `<div class="gfoe-spend-chat-description">${escapeHtml(option.description)}</div>` : ""}
       ${automationResult?.type === "strain" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-bolt"></i> ${escapeHtml(Lang.t("resultSpender.automation.strainApplied", { actor: automationResult.actorName, before: automationResult.previousValue, after: automationResult.newValue }))}</div>` : ""}
+      ${automationResult?.type === "nextCheckEffect" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(Lang.t("resultSpender.automation.effectApplied", { effect: automatedEffectLabel(automationResult.effectKind), actor: automationResult.actorName, count: automationResult.newCount }))}</div>` : ""}
+      ${automationResult?.type === "pendingNextAllySlot" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-hourglass-half"></i> ${escapeHtml(Lang.t("resultSpender.automation.nextAllyQueued", { effect: automatedEffectLabel(automationResult.effectKind) }))}</div>` : ""}
       <div class="gfoe-spend-chat-remaining"><b>${escapeHtml(Lang.t("resultSpender.remaining"))}:</b> ${renderResultBadges(remaining, { compact: true })}</div>
     </div>`;
 
@@ -891,7 +1173,9 @@ async function postSpendChatMessage(sourceMessage, requester, option, remaining,
           optionId: option.id,
           symbol: option.symbol,
           cost: option.cost,
-          byUserId: requester.id
+          byUserId: requester.id,
+          targetActorId: automationResult?.actor?.id ?? null,
+          targetActorName: automationResult?.actorName ?? null
         }
       }
     }

@@ -35,6 +35,25 @@
           "maximum": "2.0.4"
         }
       }
+    ],
+    "requires": [
+      {
+        "id": "ffg-star-wars-enhancements",
+        "type": "module",
+        "manifest": "https://github.com/wrycu/StarWarsFFG-Enhancements/releases/latest/download/module.json",
+        "compatibility": {
+          "minimum": "3.0.0",
+          "verified": "3.0.0"
+        }
+      },
+      {
+        "id": "statuscounter",
+        "type": "module",
+        "compatibility": {
+          "minimum": "3.0.4",
+          "verified": "3.0.4"
+        }
+      }
     ]
   },
   "manifest": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/module.json",

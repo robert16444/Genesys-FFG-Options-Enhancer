@@ -224,7 +224,7 @@
     "settingsTitle": "Opcje wydawania wyników",
     "settingsIntro": "Wbudowane opcje odpowiadają oficjalnym tabelom wydawania wyników dla spotkań społecznych i walki. Moduł automatycznie wybiera właściwy zestaw zależnie od tego, czy na aktywnej scenie trwa rozpoczęty Combat. Własne opcje GM są dostępne w obu trybach.",
     "builtInTitle": "Opcje wbudowane",
-    "builtInHint": "Wbudowane opcje są dobierane automatycznie do kontekstu. Nie wykonują mechanicznie efektu — zapisują wydatek i ogłaszają wybrany efekt na czacie.",
+    "builtInHint": "Wbudowane opcje są dobierane automatycznie do kontekstu. Obsługiwane efekty Strain oraz modyfikatory następnego testu są stosowane automatycznie; pozostałe opcje zapisują wydatek i ogłaszają efekt na czacie.",
     "customTitle": "Własne opcje wydawania",
     "customHint": "Dodaj typ wyniku, koszt, nazwę i opcjonalny opis. Opcje wykorzystujące Threat lub Despair są automatycznie dostępne tylko dla MG.",
     "addCustom": "Dodaj opcję",
@@ -270,8 +270,8 @@
         "description": "Poznaj Strength albo Flaw wskazanej postaci."
       },
       "socialTargetBoost": {
-        "title": "Boost do następnego testu celu",
-        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+        "title": "Setback do następnego testu celu",
+        "description": "Dodaj kość Setback do następnego testu wybranej postaci będącej celem/przeciwnikiem."
       },
       "socialAnyAllyBoost": {
         "title": "Boost do następnego testu sojusznika",
@@ -374,8 +374,8 @@
         "description": "Wykonaj natychmiast darmowy manewr, nie przekraczając limitu dwóch manewrów na turę."
       },
       "combatTargetBoost": {
-        "title": "Boost do następnego testu celu",
-        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+        "title": "Setback do następnego testu celu",
+        "description": "Dodaj kość Setback do następnego testu wybranej postaci będącej celem/przeciwnikiem."
       },
       "combatAnyAllyBoost": {
         "title": "Boost do następnego testu sojusznika",
@@ -475,7 +475,31 @@
     "automation": {
       "actorMissing": "Nie udało się ustalić aktywnej postaci dla tego rzutu. Strain nie został zmieniony.",
       "strainUnavailable": "Postać {actor} nie posiada licznika Strain, więc tego efektu nie można zastosować automatycznie.",
-      "strainApplied": "Automatycznie zaktualizowano Strain postaci {actor}: {before} → {after}."
-    }
+      "strainApplied": "Automatycznie zaktualizowano Strain postaci {actor}: {before} → {after}.",
+      "effectApplied": "Nałożono {effect} na {actor}. Łącznie na następny test: {count}.",
+      "effectNames": {
+        "boost": "Boost",
+        "setback": "Setback",
+        "upgradeAbility": "Upgrade Ability",
+        "upgradeDifficulty": "Upgrade Difficulty"
+      },
+      "nextAllyQueued": "Zakolejkowano {effect} dla następnego sojuszniczego slotu inicjatywy. Efekt zostanie nałożony, gdy ktoś przejmie ten slot.",
+      "nextAllyAppliedTitle": "Przejęto następny sojuszniczy slot",
+      "nextAllyApplied": "Nałożono {effect} na {actor}. Łącznie na następny test: {count}."
+    },
+    "targetLabel": "Cel efektu",
+    "noEligibleTarget": "Brak odpowiedniej postaci, na którą można nałożyć ten efekt.",
+    "targetRequired": "Wybierz postać, na którą ma zostać nałożony efekt.",
+    "targetInvalid": "Wybrana postać nie jest już prawidłowym celem dla tego efektu.",
+    "nextAllySlotWaiting": "Efekt zostanie nałożony automatycznie, gdy ktoś przejmie następny sojuszniczy slot inicjatywy.",
+    "noNextAllySlot": "Brak odpowiedniego następnego sojuszniczego slotu inicjatywy. Rozpocznij encounter i upewnij się, że sloty mają poprawne disposition.",
+    "currentTargetLabel": "Aktualny cel właściciela rzutu",
+    "noCurrentTarget": "Właściciel tego rzutu nie targetuje obecnie żadnego tokenu. Najpierw ustaw dokładnie jeden target.",
+    "multipleCurrentTargets": "Właściciel tego rzutu ma obecnie kilka targetów. Dla tego efektu pozostaw dokładnie jeden targetowany token.",
+    "targetChanged": "Aktualny target właściciela rzutu zmienił się. Otwórz ponownie Wydaj wyniki i spróbuj jeszcze raz.",
+    "nextAllySlotGeneric": "Następny sojuszniczy slot inicjatywy"
+  },
+  "nextCheckEffects": {
+    "hudStackTooltip": "LPM: dodaj 1 poziom. PPM: usuń 1 poziom. Aktualnie: {count}."
   }
 }
