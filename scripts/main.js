@@ -4,13 +4,14 @@ import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
 import { openTalentSearch } from "./talent-search.js";
 import { registerResultSpenderSettings, registerResultSpenderFeature, handleResultSpenderSocket } from "./result-spender.js";
-import { registerVisionStatusEffects } from "./status-effects.js";
+import { registerVisionStatusEffects, registerGuardedStanceAutomation } from "./status-effects.js";
 import {
   registerNextCheckRollAutomation,
   registerPendingNextAllySlotAutomation,
   registerNextCheckStatusCounterIntegration,
   applyNextCheckDifficultyUpgradeToPool
 } from "./next-check-effects.js";
+import { openCharacterPilot, initializeCharacterPilot, handleCharacterPilotSocket } from "./character-pilot.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -77,6 +78,15 @@ Hooks.once("init", () => {
       default: true,
       onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
     });
+    game.settings.register(MODULE_ID, "enableCharacterPilot", {
+      name: game.i18n?.localize?.("settings.enableCharacterPilotName") ?? "Enable Character Pilot",
+      hint: game.i18n?.localize?.("settings.enableCharacterPilotHint") ?? "Show the Character Pilot automation tool in Scene Controls.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
   } catch (e) { console.error(MODULE_ID, e); }
 
   dbg("init");
@@ -120,6 +130,15 @@ Hooks.once("init", () => {
       visible: true,
       onClick: () => openTalentSearch()
     });
+
+    if (isFeatureEnabled("enableCharacterPilot", true)) addTool({
+      name: "gfoe-character-pilot",
+      title: Lang.t("pilot.title"),
+      icon: "fas fa-gamepad",
+      button: true,
+      visible: true,
+      onClick: () => openCharacterPilot()
+    });
   });
 });
 
@@ -130,12 +149,21 @@ Hooks.once("setup", () => {
   } catch (e) {
     console.error(`${MODULE_ID} | vision status effects registration failed`, e);
   }
+  try {
+    registerGuardedStanceAutomation();
+  } catch (e) {
+    console.error(`${MODULE_ID} | guarded stance automation registration failed`, e);
+  }
 });
 
 Hooks.once("ready", async () => {
   dbg("ready", { user: game.user?.name, id: game.user?.id, isGM: game.user?.isGM });
 
   try { registerVisionStatusEffects(); } catch (e) { console.error(`${MODULE_ID} | vision status effects refresh failed`, e); }
+  try { registerGuardedStanceAutomation(); } catch (e) { console.error(`${MODULE_ID} | guarded stance automation refresh failed`, e); }
+  if (isFeatureEnabled("enableCharacterPilot", true)) {
+    try { initializeCharacterPilot(); } catch (e) { console.error(`${MODULE_ID} | character pilot registration failed`, e); }
+  }
   try { registerNextCheckStatusCounterIntegration(); } catch (e) { console.error(`${MODULE_ID} | Status Counter integration registration failed`, e); }
   try { registerNextCheckRollAutomation(); } catch (e) { console.error(`${MODULE_ID} | next-check roll automation registration failed`, e); }
   if (isFeatureEnabled("enableResultSpender", true)) {
@@ -170,6 +198,11 @@ Hooks.once("ready", async () => {
       if (isFeatureEnabled("enableResultSpender", true)) {
         const handled = await handleResultSpenderSocket(payload);
         if (handled) return;
+      }
+
+      if (isFeatureEnabled("enableCharacterPilot", true)) {
+        const handledByPilot = await handleCharacterPilotSocket(payload);
+        if (handledByPilot) return;
       }
 
       if (isFeatureEnabled("enableItemSend", true)) {

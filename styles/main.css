@@ -387,3 +387,266 @@ nav.context-menu .grr-context-send-item:focus-within > a,
   font-size: 0.9em;
 }
 .gfoe-spend-auto-target i { margin-right: 0.35rem; }
+
+.gfoe-character-pilot .window-content {
+  padding: 0;
+  overflow: auto;
+}
+
+.gfoe-pilot-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  min-width: 420px;
+}
+
+.gfoe-pilot-empty {
+  padding: 18px;
+  text-align: center;
+  opacity: .85;
+}
+
+.gfoe-pilot-header {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 38px;
+  gap: 10px;
+  align-items: center;
+}
+
+.gfoe-pilot-header > img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 7px;
+}
+
+.gfoe-pilot-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gfoe-pilot-heading strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.05rem;
+}
+
+.gfoe-pilot-heading select,
+.gfoe-pilot-inline input,
+.gfoe-pilot-dialog select {
+  width: 100%;
+}
+
+.gfoe-pilot-header > button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+
+.gfoe-pilot-state-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.gfoe-pilot-state {
+  padding: 7px 8px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 6px;
+  text-align: center;
+  background: rgba(0, 0, 0, .08);
+}
+
+.gfoe-pilot-state span,
+.gfoe-pilot-state strong {
+  display: block;
+}
+
+.gfoe-pilot-state span {
+  font-size: 11px;
+  opacity: .75;
+}
+
+.gfoe-pilot-state strong {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.gfoe-pilot-state.ready {
+  box-shadow: inset 0 0 0 1px rgba(80, 180, 100, .25);
+}
+
+.gfoe-pilot-state.spent {
+  opacity: .62;
+}
+
+.gfoe-pilot-state.danger {
+  box-shadow: inset 0 0 0 1px rgba(220, 70, 70, .55);
+}
+
+.gfoe-pilot-turn-note {
+  padding: 5px 8px;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 12px;
+  background: rgba(80, 180, 100, .12);
+}
+
+.gfoe-pilot-turn-note.not-turn {
+  background: rgba(200, 120, 70, .12);
+}
+
+.gfoe-pilot-section {
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-light-primary);
+}
+
+.gfoe-pilot-section h3 {
+  margin: 0 0 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gfoe-pilot-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.gfoe-pilot-actions-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gfoe-pilot-actions-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.gfoe-pilot-actions button {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 7px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.gfoe-pilot-actions button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.gfoe-pilot-targets {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.gfoe-pilot-target-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.gfoe-pilot-target-chip img,
+.gfoe-pilot-effect img {
+  width: 22px;
+  height: 22px;
+  object-fit: cover;
+  border: 0;
+}
+
+.gfoe-pilot-effects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.gfoe-pilot-effect {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.gfoe-pilot-effect span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gfoe-pilot-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.gfoe-pilot-inline label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.gfoe-pilot-muted {
+  opacity: .68;
+  font-size: 11px;
+}
+
+.gfoe-pilot-config .gfoe-pilot-muted {
+  margin: 5px 0 0;
+}
+
+.gfoe-pilot-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gfoe-pilot-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 520px) {
+  .gfoe-pilot-root { min-width: 320px; }
+  .gfoe-pilot-state-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gfoe-pilot-actions-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gfoe-pilot-effects { grid-template-columns: 1fr; }
+}
+
+.gfoe-token-pilot-control {
+  cursor: pointer;
+}
+
+.gfoe-token-pilot-floating {
+  position: absolute !important;
+  right: -44px;
+  bottom: 0;
+  width: 36px;
+  height: 36px;
+  z-index: 10;
+}
+
+.gfoe-pilot-actions button.gfoe-pilot-danger {
+  border-color: rgba(190, 45, 45, 0.8);
+}
+
+.gfoe-pilot-actions button.gfoe-pilot-danger:not(:disabled) {
+  color: var(--color-text-primary, inherit);
+}
+
+.gfoe-pilot-actions button.gfoe-pilot-danger:not(:disabled):hover {
+  box-shadow: 0 0 0 1px rgba(190, 45, 45, 0.8) inset;
+}
