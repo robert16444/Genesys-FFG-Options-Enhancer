@@ -33,7 +33,15 @@
     "selectPlayersFirst": "(select player(s) first)",
     "rollModePublic": "Public",
     "selectedPlayerHasNoCharacter": "The selected player has no character assigned.",
-    "noSkillFound": "No skill found on this character."
+    "noSkillFound": "No skill found on this character.",
+    "refreshSkills": "Refresh skills",
+    "difficultyHint": "Click 1–5 Difficulty dice. Click the selected value again to clear to 0.",
+    "finalDifficulty": "Final difficulty",
+    "rollPreview": "Roll preview",
+    "rollPreviewHint": "The dice pool shown for each selected character.",
+    "previewSelectPlayer": "Select a player to preview the complete dice pool.",
+    "previewSelectSkill": "Select a skill to preview the roll.",
+    "noDifficulty": "No difficulty dice"
   },
   "itemTransfer": {
     "contextLabel": "Send to player",

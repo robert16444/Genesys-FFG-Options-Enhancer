@@ -1,4 +1,5 @@
 import { Lang } from "./i18n.js";
+import { isElementLike, ownerDocumentOf, registerPopOutDocumentInitializer } from "./popout-compat.js";
 import {
   applyStackableNextCheckEffect,
   rollbackStackableNextCheckEffect,
@@ -17,6 +18,7 @@ const POSITIVE_SYMBOLS = new Set(["advantage", "triumph"]);
 const NEGATIVE_SYMBOLS = new Set(["threat", "despair"]);
 const spendLocks = new Set();
 let hooksRegistered = false;
+const spendResultButtonsBound = new WeakSet();
 
 const MSG = {
   SPEND_REQUEST: "RESULT_SPENDER_SPEND_REQUEST",
@@ -238,6 +240,8 @@ export function registerResultSpenderFeature() {
   if (hooksRegistered) return;
   hooksRegistered = true;
 
+  registerPopOutDocumentInitializer(doc => bindSpendResultButtons(doc));
+
   Hooks.on("renderChatMessageHTML", (message, html) => {
     try {
       renderRemainingResults(message, html);
@@ -246,10 +250,6 @@ export function registerResultSpenderFeature() {
     }
   });
 
-  // Use a single delegated listener instead of attaching a click handler to each
-  // freshly-rendered chat button. Foundry may replace chat message DOM nodes when
-  // messages are updated, which would otherwise discard direct listeners.
-  document.addEventListener("click", onSpendResultsButtonClick, true);
 }
 
 async function onSpendResultsButtonClick(event) {
@@ -273,7 +273,7 @@ async function onSpendResultsButtonClick(event) {
   }
 
   try {
-    await openSpendDialog(message);
+    await openSpendDialog(message, button);
   } catch (err) {
     console.error(`${MODULE_ID} | result-spender | failed to open Spend Results dialog`, err);
     ui.notifications?.error(err?.message || Lang.t("resultSpender.failed"));
@@ -689,13 +689,13 @@ function renderRemainingResults(message, html) {
   const original = extractRollResults(message);
   if (!hasAny(original)) return;
 
-  const root = html instanceof HTMLElement ? html : html?.[0];
+  const root = isElementLike(html) ? html : (isElementLike(html?.[0]) ? html[0] : null);
   if (!root || root.querySelector(".gfoe-results-remaining")) return;
 
   const remaining = getRemainingResults(message, original);
   const spent = normalizeState(message, original).spent;
   const target = root.querySelector(".message-content") ?? root;
-  const panel = document.createElement("div");
+  const panel = ownerDocumentOf(target).createElement("div");
   panel.className = "gfoe-results-remaining";
   const canSpendHere = canUserSpendFromMessage(game.user, message) && (
     game.user?.isGM
@@ -711,6 +711,19 @@ function renderRemainingResults(message, html) {
   `;
 
   target.appendChild(panel);
+  bindSpendResultButtons(panel);
+}
+
+function bindSpendResultButton(button) {
+  if (!isElementLike(button) || spendResultButtonsBound.has(button)) return;
+  spendResultButtonsBound.add(button);
+  button.addEventListener("click", onSpendResultsButtonClick, true);
+}
+
+function bindSpendResultButtons(root) {
+  if (!root?.querySelectorAll) return;
+  if (root.matches?.(".gfoe-open-result-spender")) bindSpendResultButton(root);
+  root.querySelectorAll(".gfoe-open-result-spender").forEach(bindSpendResultButton);
 }
 
 function renderResultBadges(results, { compact = false } = {}) {
@@ -720,7 +733,7 @@ function renderResultBadges(results, { compact = false } = {}) {
   }).join("");
 }
 
-async function openSpendDialog(message) {
+async function openSpendDialog(message, sourceElement = null) {
   if (!isEnabled()) return;
   const original = extractRollResults(message);
   if (!hasAny(original)) return ui.notifications?.warn(Lang.t("resultSpender.notSpendable"));
@@ -816,7 +829,10 @@ async function openSpendDialog(message) {
   if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
 
   // Passing an HTMLElement avoids HTML sanitization altering our data attributes.
-  const dialogContent = document.createElement("div");
+  // Create it in the same browser Document as the invoking chat card when that
+  // card has been moved into a PopOut! window.
+  const dialogDocument = ownerDocumentOf(sourceElement);
+  const dialogContent = dialogDocument.createElement("div");
   dialogContent.innerHTML = content;
 
   await DialogV2.wait({

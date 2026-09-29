@@ -12,6 +12,7 @@ import {
   applyNextCheckDifficultyUpgradeToPool
 } from "./next-check-effects.js";
 import { openCharacterPilot, initializeCharacterPilot, handleCharacterPilotSocket } from "./character-pilot.js";
+import { initializePopOutCompatibility } from "./popout-compat.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -28,6 +29,7 @@ function isFeatureEnabled(key, fallback = true) {
 }
 
 Hooks.once("init", () => {
+  try { initializePopOutCompatibility(); } catch (e) { console.warn(`${MODULE_ID} | PopOut compatibility initialization failed`, e); }
   try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
   // Register Spend Results chat rendering during init so roll messages get the
   // remaining-results panel and its direct Spend Results button.
@@ -284,13 +286,20 @@ async function showPlayerPopup(payload) {
     </div>
   `;
 
-  new Dialog({
-    title: Lang.t("request.title"),
+  const DialogV2 = foundry.applications?.api?.DialogV2;
+  if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+  await DialogV2.wait({
+    window: { title: Lang.t("request.title"), icon: "fa-solid fa-dice" },
+    position: { width: 500, height: "auto" },
     content,
-    buttons: {
-      open: {
-        icon: '<i class="fas fa-dice"></i>',
+    modal: false,
+    rejectClose: false,
+    buttons: [
+      {
+        action: "open",
+        icon: "fa-solid fa-dice",
         label: Lang.t("popup.openDialog"),
+        default: true,
         callback: async () => {
           await openStarWarsFFGRollDialog({
             actor,
@@ -301,10 +310,9 @@ async function showPlayerPopup(payload) {
           });
         }
       },
-      close: { icon: '<i class="fas fa-times"></i>', label: Lang.t("common.close") }
-    },
-    default: "open"
-  }).render(true);
+      { action: "close", icon: "fa-solid fa-times", label: Lang.t("common.close") }
+    ]
+  });
 }
 
 function applyDifficultyAndUpgrades(difficulty, upgrades) {

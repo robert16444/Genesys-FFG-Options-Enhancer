@@ -32,7 +32,15 @@
     "selectPlayersFirst": "(najpierw wybierz graczy)",
     "rollModePublic": "Publiczny",
     "selectedPlayerHasNoCharacter": "Wybrany gracz nie ma przypisanej postaci.",
-    "noSkillsFound": "Nie znaleziono umiejętności na tej postaci."
+    "noSkillsFound": "Nie znaleziono umiejętności na tej postaci.",
+    "refreshSkills": "Odśwież umiejętności",
+    "difficultyHint": "Kliknij 1–5 kości trudności. Kliknij ponownie wybraną wartość, aby wyczyścić do 0.",
+    "finalDifficulty": "Końcowa trudność",
+    "rollPreview": "Podgląd rzutu",
+    "rollPreviewHint": "Pula kości pokazana osobno dla każdej wybranej postaci.",
+    "previewSelectPlayer": "Wybierz gracza, aby zobaczyć pełny podgląd puli kości.",
+    "previewSelectSkill": "Wybierz umiejętność, aby zobaczyć podgląd rzutu.",
+    "noDifficulty": "Brak kości trudności"
   },
   "itemTransfer": {
     "contextLabel": "Wyślij do gracza",

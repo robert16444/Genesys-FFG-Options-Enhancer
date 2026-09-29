@@ -1,6 +1,7 @@
 import { Lang } from "./i18n.js";
 import { applyStackableNextCheckEffect } from "./next-check-effects.js";
 import { GUARDED_STANCE_STATUS_ID, buildGuardedStanceChanges } from "./status-effects.js";
+import { isElementLike, ownerDocumentOf } from "./popout-compat.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const PILOT_FLAG = "characterPilot";
@@ -820,7 +821,7 @@ export class CharacterPilotApp extends foundry.applications.api.ApplicationV2 {
 
   async _renderHTML() {
     const actor = this.actor;
-    const template = document.createElement("template");
+    const template = ownerDocumentOf(this).createElement("template");
     if (!actor) {
       template.innerHTML = `<div class="gfoe-pilot-empty">${esc(t("errors.noActor"))}</div>`;
       return template.content;
@@ -1118,9 +1119,9 @@ function tokenFromHudApp(app) {
 }
 
 function tokenHudRoot(app, html) {
-  if (app?.element instanceof HTMLElement) return app.element;
-  if (html instanceof HTMLElement) return html;
-  if (html?.[0] instanceof HTMLElement) return html[0];
+  if (isElementLike(app?.element)) return app.element;
+  if (isElementLike(html)) return html;
+  if (isElementLike(html?.[0])) return html[0];
   return null;
 }
 
@@ -1132,7 +1133,7 @@ function addPilotButtonToTokenHud(app, html) {
   const root = tokenHudRoot(app, html);
   if (!root || root.querySelector("[data-gfoe-token-pilot]")) return;
 
-  const button = document.createElement("button");
+  const button = ownerDocumentOf(root).createElement("button");
   button.type = "button";
   button.className = "control-icon gfoe-token-pilot-control";
   button.dataset.gfoeTokenPilot = "true";

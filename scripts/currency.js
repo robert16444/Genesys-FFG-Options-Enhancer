@@ -1,4 +1,5 @@
 import './talent-fix.js';
+import { ownerDocumentOf } from './popout-compat.js';
 
 // Currency Manager for Genesys FFG Options Enhancer
 const MODID = "genesys-ffg-options-enhancer";
@@ -602,14 +603,18 @@ export function registerCurrencyUIHook() {
       // Avoid duplicate
       if (headerEl.find(".gfoe-currency-btn").length) return;
 
-      const btn = $(`<div class="gfoe-currency-btn" title="${game.i18n.localize("GFOE.OpenCurrency")}"><i class="fa-solid fa-coins"></i></div>`);
-      btn.css({ cursor: "pointer", display: "inline-flex", "align-items":"center", "justify-content":"center", "margin-left":"6px" });
-      headerEl.append(btn);
+      const headerNode = headerEl[0];
+      const btn = ownerDocumentOf(headerNode).createElement("div");
+      btn.className = "gfoe-currency-btn";
+      btn.title = game.i18n.localize("GFOE.OpenCurrency");
+      btn.innerHTML = '<i class="fa-solid fa-coins"></i>';
+      Object.assign(btn.style, { cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", marginLeft: "6px" });
+      headerNode.appendChild(btn);
 
-      btn.on("click", (ev) => {
+      btn.addEventListener("click", (ev) => {
         ev.preventDefault();
-        const app = new GFOECurrencyApp(actor, {});
-        app.render(true);
+        const currencyApp = new GFOECurrencyApp(actor, {});
+        currencyApp.render(true);
       });
     } catch (e) {
       console.error("GFOE currency hook error:", e);
@@ -645,22 +650,30 @@ export function registerCurrencySocket() {
           content = `<p>${senderName} ${game.i18n.localize("GFOE.OffersYouValue")}: ${payload.amount} ${game.i18n.localize(payload.unit === "g" ? "GFOE.Gold" : payload.unit === "s" ? "GFOE.Silver" : "GFOE.Bronze")}.</p>`;
         }
 
-        const d = new Dialog({
-          title: game.i18n.localize("GFOE.TransferOfferTitle"),
+        const DialogV2 = foundry.applications?.api?.DialogV2;
+        if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+        await DialogV2.wait({
+          window: { title: game.i18n.localize("GFOE.TransferOfferTitle"), icon: "fa-solid fa-coins" },
+          position: { width: 430, height: "auto" },
           content,
-          buttons: {
-            ok: {
+          modal: false,
+          rejectClose: false,
+          buttons: [
+            {
+              action: "accept",
               label: game.i18n.localize("GFOE.Accept"),
+              icon: "fa-solid fa-check",
+              default: true,
               callback: () => game.socket.emit("module."+MODID, { type: "currencyOfferAccept", id: payload.id, payload })
             },
-            no: {
+            {
+              action: "decline",
               label: game.i18n.localize("GFOE.Decline"),
+              icon: "fa-solid fa-xmark",
               callback: () => game.socket.emit("module."+MODID, { type: "currencyOfferDecline", id: payload.id, payload })
             }
-          },
-          default: "ok"
+          ]
         });
-        d.render(true);
         return;
       }
 

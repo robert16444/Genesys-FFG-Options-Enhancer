@@ -1,6 +1,7 @@
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 import { Lang } from "./i18n.js";
+import { isElementLike, ownerWindowOf, registerPopOutDocumentInitializer } from "./popout-compat.js";
 function __t(key, data){ try { return Lang?.t?.(key, data) ?? key; } catch(e){ return key; } }
 
 /**
@@ -34,8 +35,9 @@ const MSG = {
   INFO_TO_USERS: "ITEM_TRANSFER_INFO_TO_USERS"
 };
 
-let lastRCItemInfo = null; // {actorId, itemId}
-let grrContextStateInstalled = false;
+const lastRCItemInfoByDocument = new WeakMap(); // Document -> {actorId, itemId}
+const contextMenuDocuments = new WeakSet();
+const contextMenuObservers = new WeakMap();
 const pendingTransfers = new Map();
 const transfersInProgress = new Set();
 const OFFER_LIFETIME_MS = 10 * 60 * 1000;
@@ -111,35 +113,34 @@ export function registerItemTransferFeature() {
     foundry?.applications?.ux?.ContextMenu ??
     foundry?.applications?.api?.ContextMenu;
 
+  registerPopOutDocumentInitializer(installContextMenuObserver);
+
   const bindForSheet = (app, html) => {
     const actor = app?.actor ?? app?.document;
     if (!actor || !actor.isOwner) return;
 
-    const root = html?.[0] ?? html;
-    if (!(root instanceof HTMLElement)) return;
+    const root = isElementLike(html) ? html : (isElementLike(html?.[0]) ? html[0] : null);
+    if (!root) return;
+    const doc = root.ownerDocument;
+    installContextMenuObserver(doc);
 
     const itemSelector = "li.item[data-item-id], div.item[data-item-id], .item[data-item-id]";
     if (!root.querySelector(itemSelector)) return;
 
-    // Track right-click so we know which item the menu is for
+    // Track right-click so we know which item the menu is for. The state is
+    // document-scoped so two popped-out sheets cannot overwrite each other.
     root.addEventListener("contextmenu", (ev) => {
       const el = ev.target?.closest?.(itemSelector);
       if (!el) return;
       const itemId = el.dataset.itemId;
       if (!itemId) return;
       const item = actor.items?.get?.(itemId);
-      if (!isAllowedItem(item)) return; // don't set if not allowed
+      if (!isAllowedItem(item)) return;
 
-      lastRCItemInfo = { actorId: actor.id, itemId };
+      lastRCItemInfoByDocument.set(doc, { actorId: actor.id, itemId });
     }, true);
 
-    // Install a document-level MutationObserver once per client
-    if (!document.body.dataset.grrObserverInstalled) {
-      installContextMenuObserver();
-      document.body.dataset.grrObserverInstalled = "1";
-    }
-
-    // Fallback menu if the system provides none
+    // Fallback menu if the system provides none.
     if (ContextMenuCls && !root.dataset.grrFallbackBound) {
       new ContextMenuCls(root, itemSelector, [
         {
@@ -155,7 +156,7 @@ export function registerItemTransferFeature() {
           callback: (li) => {
             const el = li?.closest?.(itemSelector) ?? li;
             const id = el?.dataset?.itemId;
-            return onSendItemClicked(actor, id);
+            return onSendItemClicked(actor, id, el);
           }
         }
       ], { jQuery: false });
@@ -169,41 +170,40 @@ export function registerItemTransferFeature() {
   Hooks.on("renderActorSheetFGv2", bindForSheet);
 }
 
-/** Observe for creation of the native context menu and inject our entry under the first item */
-function installContextMenuObserver() {
-  if (!grrContextStateInstalled) {
-    // Clear stale item context before every new right-click. If the click really
-    // happened on a valid item row, the sheet-level handler will immediately set it again.
-    document.addEventListener("contextmenu", () => {
-      lastRCItemInfo = null;
-    }, true);
+/** Observe for creation of the native context menu and inject our entry under the first item. */
+function installContextMenuObserver(doc = globalThis.document) {
+  if (!doc?.body || contextMenuDocuments.has(doc)) return;
+  contextMenuDocuments.add(doc);
 
-    // Also clear any remembered item after normal clicks / Escape so it cannot leak
-    // into unrelated context menus opened later.
-    document.addEventListener("click", () => {
-      lastRCItemInfo = null;
-    }, true);
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") lastRCItemInfo = null;
-    }, true);
+  // Clear stale item context before every new right-click. The sheet-level
+  // handler then immediately sets the valid item for that specific document.
+  doc.addEventListener("contextmenu", () => {
+    lastRCItemInfoByDocument.delete(doc);
+  }, true);
+  doc.addEventListener("click", () => {
+    lastRCItemInfoByDocument.delete(doc);
+  }, true);
+  doc.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") lastRCItemInfoByDocument.delete(doc);
+  }, true);
 
-    grrContextStateInstalled = true;
-  }
+  const MutationObserverCtor = doc.defaultView?.MutationObserver ?? globalThis.MutationObserver;
+  if (!MutationObserverCtor) return;
 
-  const obs = new MutationObserver((mutations) => {
+  const obs = new MutationObserverCtor((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
-        if (!(node instanceof HTMLElement)) continue;
-        const menu = node.matches?.("nav.context-menu, .context-menu, #context-menu") ? node : node.querySelector?.("nav.context-menu, .context-menu, #context-menu");
+        if (!isElementLike(node)) continue;
+        const menu = node.matches?.("nav.context-menu, .context-menu, #context-menu")
+          ? node
+          : node.querySelector?.("nav.context-menu, .context-menu, #context-menu");
         if (!menu) continue;
 
-        // Only augment once per menu instance
         if (menu.dataset.grrAugmented === "1") continue;
         const list = menu.querySelector("ol, ul, .context-items, .menu") || menu;
         if (!list) continue;
 
-        // Insert only if lastRCItemInfo still points to a valid, allowed item
-        const info = lastRCItemInfo;
+        const info = lastRCItemInfoByDocument.get(doc);
         if (!info) continue;
         const actor = game.actors.get(info.actorId);
         const item = actor?.items?.get?.(info.itemId);
@@ -222,93 +222,134 @@ function installContextMenuObserver() {
           if (icon) icon.className = "fas fa-paper-plane";
 
           const labelTarget = li.querySelector(".label") ?? li.querySelector("span") ?? li.querySelector("a") ?? li;
-          if (labelTarget) {
-            if (labelTarget === li) li.textContent = __t("itemTransfer.contextLabel");
-            else labelTarget.textContent = __t("itemTransfer.contextLabel");
-          }
-
+          if (labelTarget) labelTarget.textContent = __t("itemTransfer.contextLabel");
           first.insertAdjacentElement("afterend", li);
         } else {
-          li = document.createElement("li");
+          li = doc.createElement("li");
           li.className = "context-item grr-context-send-item";
           li.innerHTML = `<a><i class="fas fa-paper-plane"></i><span class="label">${__t("itemTransfer.contextLabel")}</span></a>`;
           list.appendChild(li);
         }
 
         menu.dataset.grrAugmented = "1";
-        requestAnimationFrame(() => restyleExpandedMenu(menu, list, li, first));
+
+        restyleExpandedMenu(menu, list, li, first);
+
+        const ownerWindow = ownerWindowOf(menu) ?? doc.defaultView ?? globalThis.window;
+        const rerunRestyle = () => restyleExpandedMenu(menu, list, li, first);
+        try { ownerWindow?.requestAnimationFrame?.(rerunRestyle); } catch (_) {}
+        try { ownerWindow?.setTimeout?.(rerunRestyle, 0); } catch (_) {}
+        try { ownerWindow?.setTimeout?.(rerunRestyle, 50); } catch (_) {}
 
         li.addEventListener("click", (e) => {
           e.preventDefault();
-          lastRCItemInfo = null;
+          lastRCItemInfoByDocument.delete(doc);
           if (!actor || !item) return;
-          try { menu.style.display = "none"; } catch (e) {}
-          onSendItemClicked(actor, item.id);
+          try { menu.style.display = "none"; } catch (_) {}
+          onSendItemClicked(actor, item.id, li);
         });
       }
     }
   });
 
-  obs.observe(document.body, {childList: true, subtree: true});
+  obs.observe(doc.body, { childList: true, subtree: true });
+  contextMenuObservers.set(doc, obs);
 }
-
 
 function restyleExpandedMenu(menu, list, li, first) {
   try {
-    const items = Array.from(list.children).filter(el => el instanceof HTMLElement);
+    const items = Array.from(list.children).filter(isElementLike);
     if (!items.length || !li) return;
 
-    // Force menu/list height to include the injected row.
-    const totalHeight = Math.ceil(items.reduce((sum, el) => sum + Math.max(el.offsetHeight, el.getBoundingClientRect().height), 0));
-    menu.style.minHeight = `${totalHeight}px`;
-    menu.style.height = `${totalHeight}px`;
-    menu.style.overflow = "hidden";
-    if (list !== menu) {
-      list.style.minHeight = `${totalHeight}px`;
-      list.style.height = `${totalHeight}px`;
-      list.style.overflow = "hidden";
+    const layoutContainers = new Set([
+      menu,
+      list,
+      ...menu.querySelectorAll("ol, ul, .context-items, .menu, .context-menu-items")
+    ]);
+    for (const container of layoutContainers) {
+      if (!container?.style) continue;
+      container.style.setProperty("height", "auto", "important");
+      container.style.setProperty("max-height", "none", "important");
+      container.style.setProperty("overflow", "visible", "important");
+      container.style.setProperty("overflow-x", "visible", "important");
+      container.style.setProperty("overflow-y", "visible", "important");
+      container.style.setProperty("scrollbar-width", "none", "important");
+    }
+
+    const totalHeight = Math.ceil(items.reduce(
+      (sum, el) => sum + Math.max(el.offsetHeight, el.getBoundingClientRect().height),
+      0
+    ));
+    if (totalHeight > 0) {
+      menu.style.setProperty("min-height", `${totalHeight}px`, "important");
+      if (list !== menu) list.style.setProperty("min-height", `${totalHeight}px`, "important");
     }
 
     const source = first && first !== li ? first : items[0];
     if (!source || source === li) return;
 
-    // Keep the DOM structure/classes cloned from the system row so Foundry/system hover
-    // styling continues to work. Only normalize size/visibility related properties.
+    // A cloned native row can carry transient disabled/hover state. Strip it
+    // recursively so neither the row, anchor, icon nor label keeps the system's
+    // disabled foreground colour.
+    for (const el of [li, ...li.querySelectorAll("*")]) {
+      if (!el) continue;
+      el.classList?.remove?.("disabled", "is-disabled", "inactive", "locked");
+      el.removeAttribute?.("disabled");
+      el.removeAttribute?.("aria-disabled");
+      el.removeAttribute?.("data-disabled");
+    }
+
     const sourceInner = source.querySelector(":scope > a, :scope > button, :scope > .menu-item") ?? source;
     const liInner = li.querySelector(":scope > a, :scope > button, :scope > .menu-item") ?? li;
 
     copyComputedBox(source, li, { includeBackground: false });
     copyComputedBox(sourceInner, liInner, { includeBackground: false });
 
-    li.style.opacity = "1";
-    li.style.visibility = "visible";
-    li.style.background = "";
-    li.style.backgroundColor = "";
+    li.style.setProperty("opacity", "1", "important");
+    li.style.setProperty("visibility", "visible", "important");
+    li.style.removeProperty("background");
+    li.style.removeProperty("background-color");
 
-    liInner.style.opacity = "1";
-    liInner.style.visibility = "visible";
-    liInner.style.width = "100%";
-    liInner.style.background = "";
-    liInner.style.backgroundColor = "";
+    liInner.style.setProperty("opacity", "1", "important");
+    liInner.style.setProperty("visibility", "visible", "important");
+    liInner.style.setProperty("width", "100%", "important");
+    liInner.style.removeProperty("background");
+    liInner.style.removeProperty("background-color");
+
+    copyTextStyle(sourceInner, liInner, { importantColor: true });
 
     const srcIcon = source.querySelector("i");
     const dstIcon = li.querySelector("i");
-    if (srcIcon && dstIcon) copyTextStyle(srcIcon, dstIcon);
+    if (srcIcon && dstIcon) copyTextStyle(srcIcon, dstIcon, { importantColor: true });
 
     const srcLabel = source.querySelector(".label") ?? source.querySelector("span") ?? sourceInner;
     const dstLabel = li.querySelector(".label") ?? li.querySelector("span") ?? liInner;
     if (srcLabel && dstLabel) {
-      copyTextStyle(srcLabel, dstLabel);
+      copyTextStyle(srcLabel, dstLabel, { importantColor: true });
       dstLabel.textContent = __t("itemTransfer.contextLabel");
     }
+
+    const nativeColor = computedStyleFor(srcLabel ?? sourceInner ?? source)?.color;
+    if (nativeColor) {
+      li.style.setProperty("color", nativeColor, "important");
+      for (const child of li.querySelectorAll("*")) {
+        child.style?.setProperty?.("color", nativeColor, "important");
+      }
+    }
+    li.style.setProperty("pointer-events", "auto", "important");
   } catch (err) {
     console.warn(`${MODULE_ID} | item-transfer | context menu restyle failed`, err);
   }
 }
 
+function computedStyleFor(source) {
+  return source?.ownerDocument?.defaultView?.getComputedStyle?.(source) ?? globalThis.getComputedStyle?.(source);
+}
+
 function copyComputedBox(source, target, { includeBackground = true } = {}) {
   if (!source || !target) return;
-  const s = getComputedStyle(source);
+  const s = computedStyleFor(source);
+  if (!s) return;
   const t = target.style;
   const props = [
     "display", "position", "boxSizing", "width", "height", "minHeight", "maxHeight",
@@ -321,36 +362,25 @@ function copyComputedBox(source, target, { includeBackground = true } = {}) {
   for (const prop of props) t[prop] = s[prop];
 }
 
-function copyTextStyle(source, target) {
+function copyTextStyle(source, target, { importantColor = false } = {}) {
   if (!source || !target) return;
-
-  const sourceStyle = getComputedStyle(source);
+  const sourceStyle = computedStyleFor(source);
+  if (!sourceStyle) return;
   const targetStyle = target.style;
   const props = [
-    "color",
-    "font",
-    "fontFamily",
-    "fontSize",
-    "fontStyle",
-    "fontWeight",
-    "fontVariant",
-    "fontStretch",
-    "letterSpacing",
-    "lineHeight",
-    "textAlign",
-    "textDecoration",
-    "textTransform",
-    "textShadow",
-    "whiteSpace"
+    "color", "font", "fontFamily", "fontSize", "fontStyle", "fontWeight",
+    "fontVariant", "fontStretch", "letterSpacing", "lineHeight", "textAlign",
+    "textDecoration", "textTransform", "textShadow", "whiteSpace"
   ];
-
   for (const prop of props) {
     const value = sourceStyle[prop];
-    if (value != null && value !== "") targetStyle[prop] = value;
+    if (value == null || value === "") continue;
+    if (prop === "color" && importantColor) targetStyle.setProperty("color", value, "important");
+    else targetStyle[prop] = value;
   }
 }
 
-async function onSendItemClicked(fromActor, itemId) {
+async function onSendItemClicked(fromActor, itemId, sourceElement = null) {
   if (!isItemTransferEnabled()) return ui.notifications?.warn?.(__t("itemTransfer.disabled") || "Item transfer is disabled.");
   try {
     const item = fromActor.items.get(itemId);
@@ -394,18 +424,27 @@ async function onSendItemClicked(fromActor, itemId) {
       </div>
     `;
 
-    new Dialog({
-      title: __t("controls.itemTransfer"),
+    const DialogV2 = foundry.applications?.api?.DialogV2;
+    if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+
+    await DialogV2.wait({
+      window: { title: __t("controls.itemTransfer"), icon: "fa-solid fa-paper-plane" },
+      position: { width: 460, height: "auto" },
       content,
-      buttons: {
-        send: {
-          icon: '<i class="fas fa-paper-plane"></i>',
+      modal: false,
+      rejectClose: false,
+      buttons: [
+        {
+          action: "send",
+          icon: "fa-solid fa-paper-plane",
           label: __t("request.send"),
-          callback: async (html) => {
-            const toUserId = html.find("select[name='grrRecipient']").val();
+          default: true,
+          callback: async (_event, button) => {
+            const form = button?.form;
+            const toUserId = form?.elements?.grrRecipient?.value;
             if (!toUserId) return ui.notifications.warn(__t("request.selectUser"));
             const quantity = available > 1
-              ? parseTransferQuantity(html.find("input[name='grrQuantity']").val())
+              ? parseTransferQuantity(form?.elements?.grrQuantity?.value)
               : 1;
             const currentItem = fromActor.items.get(itemId);
             const currentStock = getItemQuantity(currentItem);
@@ -421,45 +460,43 @@ async function onSendItemClicked(fromActor, itemId) {
               toUserId
             };
 
-            if (isPrimaryGM()) {
-              await handleRequestToGM(requestPayload);
-            } else {
-              await emitToModuleSocket(requestPayload);
-            }
+            if (isPrimaryGM()) await handleRequestToGM(requestPayload);
+            else await emitToModuleSocket(requestPayload);
 
             ui.notifications.info(__t("itemTransfer.sent"));
           }
         },
-        cancel: { label: __t("common.cancel") }
-      },
-      default: "send",
-      render: (html) => {
+        { action: "cancel", label: __t("common.cancel"), icon: "fa-solid fa-xmark" }
+      ],
+      render: (_event, app) => {
         if (available <= 1) return;
-
-        const input = html.find("input[name='grrQuantity']");
-        const display = html.find("[data-grr-qty-display]");
-        const minus = html.find("[data-grr-qty-delta='-1']");
-        const plus = html.find("[data-grr-qty-delta='1']");
+        const root = app.element;
+        const input = root?.querySelector?.("input[name='grrQuantity']");
+        const display = root?.querySelector?.("[data-grr-qty-display]");
+        const minus = root?.querySelector?.("[data-grr-qty-delta='-1']");
+        const plus = root?.querySelector?.("[data-grr-qty-delta='1']");
+        if (!input || !display || !minus || !plus) return;
 
         const setQuantity = (rawValue) => {
           const requested = Number(rawValue);
           const next = Math.max(1, Math.min(available, Number.isFinite(requested) ? Math.trunc(requested) : 1));
-          input.val(String(next));
-          display.text(String(next));
-          minus.prop("disabled", next <= 1);
-          plus.prop("disabled", next >= available);
+          input.value = String(next);
+          display.textContent = String(next);
+          minus.disabled = next <= 1;
+          plus.disabled = next >= available;
         };
 
-        html.find("[data-grr-qty-delta]").on("click", (event) => {
-          event.preventDefault();
-          const delta = Number(event.currentTarget?.dataset?.grrQtyDelta ?? 0);
-          const current = parseTransferQuantity(input.val()) ?? 1;
-          setQuantity(current + delta);
+        root.querySelectorAll("[data-grr-qty-delta]").forEach(control => {
+          control.addEventListener("click", event => {
+            event.preventDefault();
+            const delta = Number(event.currentTarget?.dataset?.grrQtyDelta ?? 0);
+            const current = parseTransferQuantity(input.value) ?? 1;
+            setQuantity(current + delta);
+          });
         });
-
         setQuantity(1);
       }
-    }).render(true);
+    });
 
   } catch (err) {
     console.error(`${MODULE_ID} | item-transfer | onSendItemClicked error`, err);
@@ -562,21 +599,36 @@ async function handleRequestToRecipient(payload) {
     </div>
   `;
 
-  new Dialog({
-    title: __t("itemTransfer.incomingTitle"),
+  const DialogV2 = foundry.applications?.api?.DialogV2;
+  if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+  await DialogV2.wait({
+    window: { title: __t("itemTransfer.incomingTitle"), icon: "fa-solid fa-box-open" },
+    position: { width: 460, height: "auto" },
     content,
-    buttons: {
-      accept: { icon: '<i class="fas fa-check"></i>', label: __t("itemTransfer.accept"), callback: async () => {
-        await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: true, request: payload, responderUserId: game.user.id });
-        ui.notifications.info(__t("itemTransfer.acceptedInfo"));
-      }},
-      decline: { icon: '<i class="fas fa-times"></i>', label: __t("itemTransfer.decline"), callback: async () => {
-        await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: false, request: payload, responderUserId: game.user.id });
-        ui.notifications.info(__t("itemTransfer.declinedInfo"));
-      }}
-    },
-    default: "accept"
-  }).render(true);
+    modal: false,
+    rejectClose: false,
+    buttons: [
+      {
+        action: "accept",
+        icon: "fa-solid fa-check",
+        label: __t("itemTransfer.accept"),
+        default: true,
+        callback: async () => {
+          await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: true, request: payload, responderUserId: game.user.id });
+          ui.notifications.info(__t("itemTransfer.acceptedInfo"));
+        }
+      },
+      {
+        action: "decline",
+        icon: "fa-solid fa-times",
+        label: __t("itemTransfer.decline"),
+        callback: async () => {
+          await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: false, request: payload, responderUserId: game.user.id });
+          ui.notifications.info(__t("itemTransfer.declinedInfo"));
+        }
+      }
+    ]
+  });
 }
 
 async function handleResponseToGM(payload) {
