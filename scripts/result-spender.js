@@ -7,6 +7,12 @@ import {
   queueNextAlliedSlotEffect,
   rollbackPendingNextAlliedSlotEffect
 } from "./next-check-effects.js";
+import {
+  getWeaponQualitySpendOptions,
+  getWeaponRollContext,
+  applyWeaponQualityAutomation,
+  rollbackWeaponQualityAutomation
+} from "./weapon-automation.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const FEATURE_SETTING = "enableResultSpender";
@@ -18,7 +24,7 @@ const POSITIVE_SYMBOLS = new Set(["advantage", "triumph"]);
 const NEGATIVE_SYMBOLS = new Set(["threat", "despair"]);
 const spendLocks = new Set();
 let hooksRegistered = false;
-const spendResultButtonsBound = new WeakSet();
+const spendResultDocumentsBound = new WeakSet();
 
 const MSG = {
   SPEND_REQUEST: "RESULT_SPENDER_SPEND_REQUEST",
@@ -240,7 +246,8 @@ export function registerResultSpenderFeature() {
   if (hooksRegistered) return;
   hooksRegistered = true;
 
-  registerPopOutDocumentInitializer(doc => bindSpendResultButtons(doc));
+  registerPopOutDocumentInitializer(doc => bindSpendResultsDocument(doc));
+  bindSpendResultsDocument(globalThis.document);
 
   Hooks.on("renderChatMessageHTML", (message, html) => {
     try {
@@ -369,16 +376,39 @@ function getCustomOptions() {
   }
 }
 
-function getAllOptions() {
-  return [...getBuiltInOptions(), ...getCustomOptions()];
+function getAllOptions(message = null) {
+  const weaponOptions = message ? getWeaponQualitySpendOptions(message) : [];
+  const weaponContext = message ? getWeaponRollContext(message) : null;
+  let builtIns = getBuiltInOptions().filter(option =>
+    !(weaponOptions.length && option.id.startsWith("combat-item-quality-"))
+  );
+
+  if (weaponContext) {
+    if (!weaponContext.hit) {
+      builtIns = builtIns.filter(option => !option.id.startsWith("combat-critical-injury-"));
+    } else {
+      const critCost = Math.max(1, safeNonNegativeInt(weaponContext.crit, 1));
+      const vicious = Math.max(0, safeNonNegativeInt(weaponContext.qualities?.vicious?.rank, 0));
+      builtIns = builtIns.map(option => {
+        if (!option.id.startsWith("combat-critical-injury-")) return option;
+        const copy = cloneData(option);
+        if (copy.symbol === "advantage") {
+          copy.cost = critCost;
+          copy.variableCost = false;
+        }
+        if (vicious) {
+          copy.description = `${copy.description} ${Lang.t("weaponAutomation.criticalViciousHint", { modifier: vicious * 10 })}`.trim();
+        }
+        return copy;
+      });
+    }
+  }
+
+  return [...builtIns, ...weaponOptions, ...getCustomOptions()];
 }
 
-function getOptionById(optionId) {
-  return [
-    ...getBuiltInOptions("social"),
-    ...getBuiltInOptions("combat"),
-    ...getCustomOptions()
-  ].find(entry => entry.id === optionId) ?? null;
+function getOptionById(optionId, message = null) {
+  return getAllOptions(message).find(entry => entry.id === optionId) ?? null;
 }
 
 function sanitizeCustomOption(option) {
@@ -556,7 +586,7 @@ function buildCurrentRollOwnerTargetChoices(message) {
 }
 
 function buildTargetChoices(message, automation, requester = game.user) {
-  if (automation?.type !== "nextCheckEffect") return [];
+  if (!automation?.targetMode) return [];
 
   const targetMode = automation.targetMode ?? "any";
   if (targetMode === "targeted") return buildCurrentRollOwnerTargetChoices(message);
@@ -594,14 +624,14 @@ function buildTargetChoices(message, automation, requester = game.user) {
 }
 
 function resolveValidatedTarget(message, automation, requester, targetRef) {
-  if (automation?.type !== "nextCheckEffect") return null;
+  if (!automation?.targetMode) return null;
   if (automation.targetMode === "nextAllySlot") return null;
   const choices = buildTargetChoices(message, automation, requester);
   return choices.find(choice => choice.ref === targetRef) ?? null;
 }
 
 function getAutomationTargetUiState(message, automation, requester = game.user) {
-  if (automation?.type !== "nextCheckEffect") return { kind: "none", available: true, choices: [], targetRef: null };
+  if (!automation?.targetMode) return { kind: "none", available: true, choices: [], targetRef: null };
 
   const mode = automation.targetMode ?? "any";
   if (mode === "nextAllySlot") {
@@ -711,19 +741,13 @@ function renderRemainingResults(message, html) {
   `;
 
   target.appendChild(panel);
-  bindSpendResultButtons(panel);
+  bindSpendResultsDocument(ownerDocumentOf(panel));
 }
 
-function bindSpendResultButton(button) {
-  if (!isElementLike(button) || spendResultButtonsBound.has(button)) return;
-  spendResultButtonsBound.add(button);
-  button.addEventListener("click", onSpendResultsButtonClick, true);
-}
-
-function bindSpendResultButtons(root) {
-  if (!root?.querySelectorAll) return;
-  if (root.matches?.(".gfoe-open-result-spender")) bindSpendResultButton(root);
-  root.querySelectorAll(".gfoe-open-result-spender").forEach(bindSpendResultButton);
+function bindSpendResultsDocument(doc) {
+  if (!doc?.addEventListener || spendResultDocumentsBound.has(doc)) return;
+  spendResultDocumentsBound.add(doc);
+  doc.addEventListener("click", onSpendResultsButtonClick, true);
 }
 
 function renderResultBadges(results, { compact = false } = {}) {
@@ -742,7 +766,7 @@ async function openSpendDialog(message, sourceElement = null) {
   const remaining = getRemainingResults(message, original);
   const spendingContext = getSpendingContext();
   const allowedSymbols = game.user?.isGM ? new Set(SYMBOLS) : POSITIVE_SYMBOLS;
-  const options = getAllOptions()
+  const options = getAllOptions(message)
     .filter(option => allowedSymbols.has(option.symbol))
     .sort((a, b) => SYMBOLS.indexOf(a.symbol) - SYMBOLS.indexOf(b.symbol) || a.cost - b.cost || a.title.localeCompare(b.title));
 
@@ -756,7 +780,7 @@ async function openSpendDialog(message, sourceElement = null) {
   const groupsHtml = grouped.map(group => {
     const rows = group.options.map(option => {
       const affordable = remaining[option.symbol] >= option.cost;
-      const needsTarget = option.automation?.type === "nextCheckEffect";
+      const needsTarget = Boolean(option.automation?.targetMode);
       const targetState = needsTarget ? getAutomationTargetUiState(message, option.automation, game.user) : { kind: "none", available: true, choices: [] };
       const targetChoices = targetState.choices ?? [];
       const targetAvailable = !needsTarget || targetState.available;
@@ -943,13 +967,13 @@ async function processSpendRequest(payload) {
   if (!isEnabled()) return feedback(Lang.t("resultSpender.disabled"));
   if (!canUserSpendFromMessage(requester, message)) return feedback(Lang.t("resultSpender.noPermission"));
 
-  const option = getOptionById(payload.optionId);
+  const option = getOptionById(payload.optionId, message);
   if (!option) return feedback(Lang.t("resultSpender.optionMissing"));
   if (!requester.isGM && NEGATIVE_SYMBOLS.has(option.symbol)) return feedback(Lang.t("resultSpender.gmOnlyNegative"));
   if (!requester.isGM && !POSITIVE_SYMBOLS.has(option.symbol)) return feedback(Lang.t("resultSpender.noPermission"));
 
   let automationTarget = null;
-  if (option.automation?.type === "nextCheckEffect") {
+  if (option.automation?.targetMode) {
     const targetMode = option.automation.targetMode ?? "any";
     if (targetMode === "nextAllySlot") {
       if (!findNextAlliedInitiativeSlot(message)) return feedback(Lang.t("resultSpender.noNextAllySlot"));
@@ -977,6 +1001,16 @@ async function processSpendRequest(payload) {
 
     const previousFlag = cloneData(message.getFlag(MODULE_ID, FLAG_KEY));
     const state = normalizeState(message, originalFromRoll);
+
+    const activationKey = option?.automation?.activationKey ?? null;
+    const maxActivations = Number(option?.automation?.maxActivations);
+    if (activationKey && Number.isFinite(maxActivations) && maxActivations > 0) {
+      const used = state.history.filter(entry => entry?.activationKey === activationKey).length;
+      if (used >= maxActivations) {
+        return feedback(Lang.t("resultSpender.activationLimitReached", { count: maxActivations }));
+      }
+    }
+
     const remaining = getRemainingFromState(state);
     if (remaining[option.symbol] < spendCost) {
       return feedback(Lang.t("resultSpender.notEnough", {
@@ -997,7 +1031,8 @@ async function processSpendRequest(payload) {
       symbol: option.symbol,
       cost: spendCost,
       targetRef: automationTarget?.ref ?? null,
-      targetName: automationTarget?.label ?? null
+      targetName: automationTarget?.label ?? null,
+      activationKey: option?.automation?.activationKey ?? null
     });
     state.history = state.history.slice(-MAX_HISTORY);
 
@@ -1062,6 +1097,10 @@ function resolveRollActor(message) {
 async function applyOptionAutomation(message, option, targetChoice = null) {
   const automation = option?.automation;
   if (!automation) return null;
+
+  if (automation.type === "weaponQuality") {
+    return applyWeaponQualityAutomation(message, option, targetChoice);
+  }
 
   if (automation.type === "nextCheckEffect") {
     if (automation.targetMode === "nextAllySlot") {
@@ -1133,6 +1172,11 @@ async function applyOptionAutomation(message, option, targetChoice = null) {
 async function rollbackOptionAutomation(result) {
   if (!result) return;
 
+  if (result.type === "weaponQuality") {
+    await rollbackWeaponQualityAutomation(result);
+    return;
+  }
+
   if (result.type === "strain" && result.actor) {
     await result.actor.update({ "system.stats.strain.value": result.previousValue });
     return;
@@ -1176,6 +1220,7 @@ async function postSpendChatMessage(sourceMessage, requester, option, remaining,
       ${automationResult?.type === "strain" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-bolt"></i> ${escapeHtml(Lang.t("resultSpender.automation.strainApplied", { actor: automationResult.actorName, before: automationResult.previousValue, after: automationResult.newValue }))}</div>` : ""}
       ${automationResult?.type === "nextCheckEffect" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(Lang.t("resultSpender.automation.effectApplied", { effect: automatedEffectLabel(automationResult.effectKind), actor: automationResult.actorName, count: automationResult.newCount }))}</div>` : ""}
       ${automationResult?.type === "pendingNextAllySlot" ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-hourglass-half"></i> ${escapeHtml(Lang.t("resultSpender.automation.nextAllyQueued", { effect: automatedEffectLabel(automationResult.effectKind) }))}</div>` : ""}
+      ${automationResult?.type === "weaponQuality" && automationResult?.summary ? `<div class="gfoe-spend-chat-description"><i class="fa-solid fa-crosshairs"></i> ${escapeHtml(automationResult.summary)}</div>` : ""}
       <div class="gfoe-spend-chat-remaining"><b>${escapeHtml(Lang.t("resultSpender.remaining"))}:</b> ${renderResultBadges(remaining, { compact: true })}</div>
     </div>`;
 

@@ -13,6 +13,8 @@ import {
 } from "./next-check-effects.js";
 import { openCharacterPilot, initializeCharacterPilot, handleCharacterPilotSocket } from "./character-pilot.js";
 import { initializePopOutCompatibility } from "./popout-compat.js";
+import { registerWeaponAutomationSettings, registerWeaponAutomationFeature, handleWeaponAutomationSocket } from "./weapon-automation.js";
+import { openCriticalManager, initializeCriticalManager } from "./critical-manager.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -31,9 +33,11 @@ function isFeatureEnabled(key, fallback = true) {
 Hooks.once("init", () => {
   try { initializePopOutCompatibility(); } catch (e) { console.warn(`${MODULE_ID} | PopOut compatibility initialization failed`, e); }
   try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
+  try { registerWeaponAutomationSettings(); } catch (e) { console.error(`${MODULE_ID} | weapon automation settings registration failed`, e); }
   // Register Spend Results chat rendering during init so roll messages get the
   // remaining-results panel and its direct Spend Results button.
   try { registerResultSpenderFeature(); } catch (e) { console.error(`${MODULE_ID} | result spender registration failed`, e); }
+  try { registerWeaponAutomationFeature(); } catch (e) { console.error(`${MODULE_ID} | weapon automation registration failed`, e); }
 
   try {
     game.settings.register(MODULE_ID, "activationCostLabel", {
@@ -83,6 +87,15 @@ Hooks.once("init", () => {
     game.settings.register(MODULE_ID, "enableCharacterPilot", {
       name: game.i18n?.localize?.("settings.enableCharacterPilotName") ?? "Enable Character Pilot",
       hint: game.i18n?.localize?.("settings.enableCharacterPilotHint") ?? "Show the Character Pilot automation tool in Scene Controls.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+    game.settings.register(MODULE_ID, "enableCriticalManager", {
+      name: game.i18n?.localize?.("settings.enableCriticalManagerName") ?? "Enable Critical Injury Manager",
+      hint: game.i18n?.localize?.("settings.enableCriticalManagerHint") ?? "Show the GM Critical Injury Manager in Scene Controls.",
       scope: "world",
       config: true,
       type: Boolean,
@@ -141,6 +154,15 @@ Hooks.once("init", () => {
       visible: true,
       onClick: () => openCharacterPilot()
     });
+
+    if (game.user?.isGM && isFeatureEnabled("enableCriticalManager", true)) addTool({
+      name: "gfoe-critical-manager",
+      title: Lang.t("criticalManager.title"),
+      icon: "fas fa-heart-crack",
+      button: true,
+      visible: true,
+      onClick: () => openCriticalManager()
+    });
   });
 });
 
@@ -165,6 +187,9 @@ Hooks.once("ready", async () => {
   try { registerGuardedStanceAutomation(); } catch (e) { console.error(`${MODULE_ID} | guarded stance automation refresh failed`, e); }
   if (isFeatureEnabled("enableCharacterPilot", true)) {
     try { initializeCharacterPilot(); } catch (e) { console.error(`${MODULE_ID} | character pilot registration failed`, e); }
+  }
+  if (game.user?.isGM && isFeatureEnabled("enableCriticalManager", true)) {
+    try { initializeCriticalManager(); } catch (e) { console.error(`${MODULE_ID} | critical manager registration failed`, e); }
   }
   try { registerNextCheckStatusCounterIntegration(); } catch (e) { console.error(`${MODULE_ID} | Status Counter integration registration failed`, e); }
   try { registerNextCheckRollAutomation(); } catch (e) { console.error(`${MODULE_ID} | next-check roll automation registration failed`, e); }
@@ -205,6 +230,11 @@ Hooks.once("ready", async () => {
       if (isFeatureEnabled("enableCharacterPilot", true)) {
         const handledByPilot = await handleCharacterPilotSocket(payload);
         if (handledByPilot) return;
+      }
+
+      if (isFeatureEnabled("enableWeaponAutomation", true)) {
+        const handledByWeaponAutomation = await handleWeaponAutomationSocket(payload);
+        if (handledByWeaponAutomation) return;
       }
 
       if (isFeatureEnabled("enableItemSend", true)) {

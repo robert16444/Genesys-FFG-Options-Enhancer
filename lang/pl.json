@@ -8,7 +8,8 @@
   "controls": {
     "requestRoll": "Poproś o rzut",
     "talentSearch": "Wyszukiwarka talentów",
-    "itemTransfer": "Przekazanie przedmiotu"
+    "itemTransfer": "Przekazanie przedmiotu",
+    "criticalManager": "Menedżer obrażeń krytycznych"
   },
   "request": {
     "title": "Prośba o rzut",
@@ -208,7 +209,11 @@
     "resultSpenderMenuLabel": "Konfiguruj wydawanie wyników",
     "resultSpenderMenuHint": "Dodaj własne sposoby wydawania wyników kości narracyjnych i określ ich koszt.",
     "enableCharacterPilotName": "Włącz Pilota postaci",
-    "enableCharacterPilotHint": "Pokazuje Pilota postaci w narzędziach sceny. Automatyzuje zasoby tury, typowe manewry, koszty Strain, efekty tymczasowe i szybkie narzędzia GM."
+    "enableCharacterPilotHint": "Pokazuje Pilota postaci w narzędziach sceny. Automatyzuje zasoby tury, typowe manewry, koszty Strain, efekty tymczasowe i szybkie narzędzia GM.",
+    "enableWeaponAutomationName": "Włącz automatyzację broni",
+    "enableWeaponAutomationHint": "Dodaje karty Apply Damage, automatyczne liczenie Soak/Pierce/Breach, pasywne modyfikatory kości z jakości broni oraz integrację aktywnych jakości z Wydawaniem wyników.",
+    "enableCriticalManagerName": "Włącz Menedżer obrażeń krytycznych",
+    "enableCriticalManagerHint": "Pokazuje narzędzie GM do losowania i nakładania Critical Injuries na lewym pasku sceny."
   },
   "resultSpender": {
     "contextLabel": "Wydaj wyniki",
@@ -507,7 +512,8 @@
     "noCurrentTarget": "Właściciel tego rzutu nie targetuje obecnie żadnego tokenu. Najpierw ustaw dokładnie jeden target.",
     "multipleCurrentTargets": "Właściciel tego rzutu ma obecnie kilka targetów. Dla tego efektu pozostaw dokładnie jeden targetowany token.",
     "targetChanged": "Aktualny target właściciela rzutu zmienił się. Otwórz ponownie Wydaj wyniki i spróbuj jeszcze raz.",
-    "nextAllySlotGeneric": "Następny sojuszniczy slot inicjatywy"
+    "nextAllySlotGeneric": "Następny sojuszniczy slot inicjatywy",
+    "activationLimitReached": "Tej jakości nie można aktywować z tego rzutu więcej niż {count} raz(y)."
   },
   "nextCheckEffects": {
     "hudStackTooltip": "LPM: dodaj 1 poziom. PPM: usuń 1 poziom. Aktualnie: {count}."
@@ -626,5 +632,231 @@
     "clearEffectsTitle": "Usunąć wszystkie efekty?",
     "clearEffectsConfirm": "Czy na pewno usunąć wszystkie Active Effecty z postaci {name}? Zostanie usuniętych: {count}. Tej operacji nie można cofnąć.",
     "cancel": "Anuluj"
+  },
+  "weaponAutomation": {
+    "weapon": "Broń",
+    "target": "cel",
+    "rollPanelTitle": "Jakości broni",
+    "useAutoFire": "Użyj Auto-Fire (+1 Difficulty)",
+    "publishDamage": "Pokaż obrażenia",
+    "damagePublished": "Obrażenia opublikowane",
+    "activateQuality": "Aktywuj {quality}",
+    "rollMods": {
+      "accurate": "+{count} Boost z Accurate",
+      "inaccurate": "+{count} Setback z Inaccurate",
+      "cumbersome": "+{count} Difficulty z Cumbersome (Brawn poniżej rangi)",
+      "superior": "+1 automatyczny Advantage z Superior",
+      "inferior": "+1 automatyczny Threat z Inferior"
+    },
+    "rollWarnings": {
+      "prepare": "Prepare {rank}: przed atakiem wymagane jest {rank} manewr(y) przygotowania.",
+      "slowFiring": "Slow-Firing {rank}: pamiętaj o wymaganej liczbie rund przerwy po strzale.",
+      "limitedAmmo": "Limited Ammo {rank}: pilnuj liczby pozostałych strzałów/przeładowania."
+    },
+    "qualities": {
+      "accurate": {
+        "name": "Accurate",
+        "description": "Dodaje kości Boost do testów wykonywanych tą bronią."
+      },
+      "autofire": {
+        "name": "Auto-Fire",
+        "description": "Pozwala wydać wyniki na dodatkowe trafienie. Włączenie Auto-Fire przed rzutem zwiększa Difficulty o 1."
+      },
+      "breach": {
+        "name": "Breach",
+        "description": "Ignoruje 1 punkt Armor pojazdu lub 10 punktów osobistego Soak za rangę, chyba że działa Cortosis."
+      },
+      "burn": {
+        "name": "Burn",
+        "description": "Nakłada Burn na liczbę rund równą randze."
+      },
+      "blast": {
+        "name": "Blast",
+        "description": "Zadaje obrażenia Blast postaciom Engaged z pierwotnym celem. Po chybieniu kosztuje 3 Advantage."
+      },
+      "concussive": {
+        "name": "Concussive",
+        "description": "Nakłada Staggered na liczbę rund równą randze."
+      },
+      "cortosis": {
+        "name": "Cortosis",
+        "description": "Chroni Soak/Armor przed redukcją z Pierce i Breach."
+      },
+      "cumbersome": {
+        "name": "Cumbersome",
+        "description": "Zwiększa Difficulty testów wykonywanych tą bronią o 1 za każdy punkt Brawn poniżej rangi."
+      },
+      "defensive": {
+        "name": "Defensive",
+        "description": "Zwiększa melee defense podczas dzierżenia broni."
+      },
+      "deflection": {
+        "name": "Deflection",
+        "description": "Zwiększa ranged defense podczas dzierżenia broni."
+      },
+      "disorient": {
+        "name": "Disorient",
+        "description": "Dodaje Setback do testów skilli celu przez liczbę rund równą randze."
+      },
+      "ensnare": {
+        "name": "Ensnare",
+        "description": "Nakłada Immobilized na liczbę rund równą randze."
+      },
+      "guided": {
+        "name": "Guided",
+        "description": "Po chybieniu wydaj 3 Advantage lub Triumph, aby pocisk kontynuował atak na pierwotny cel; kolejny test pozostaje kontekstowy."
+      },
+      "inaccurate": {
+        "name": "Inaccurate",
+        "description": "Dodaje Setbacki do testów wykonywanych tą bronią."
+      },
+      "inferior": {
+        "name": "Inferior",
+        "description": "Dodaje 1 automatyczny Threat do testów związanych z przedmiotem i zmniejsza bazowe obrażenia broni o 1."
+      },
+      "ion": {
+        "name": "Ion",
+        "description": "Obrażenia trafiają w Strain/System Strain, jeśli cel ma taki tor."
+      },
+      "limitedammo": {
+        "name": "Limited Ammo",
+        "description": "Broń ma ograniczoną liczbę strzałów przed przeładowaniem."
+      },
+      "linked": {
+        "name": "Linked",
+        "description": "Pozwala wydać wyniki na dodatkowe trafienia, maksymalnie do rangi Linked."
+      },
+      "knockdown": {
+        "name": "Knockdown",
+        "description": "Powala cel; koszt Advantage rośnie wraz z silhouette celu."
+      },
+      "pierce": {
+        "name": "Pierce",
+        "description": "Ignoruje osobisty Soak równy randze, chyba że działa Cortosis."
+      },
+      "prepare": {
+        "name": "Prepare",
+        "description": "Wymaga manewrów przygotowania przed użyciem."
+      },
+      "slowfiring": {
+        "name": "Slow-Firing",
+        "description": "Broń wymaga przerwy określonej liczbą rund po strzale."
+      },
+      "stun": {
+        "name": "Stun",
+        "description": "Po aktywacji nakłada Strain równy randze Stun."
+      },
+      "stundamage": {
+        "name": "Stun Damage",
+        "description": "Zwykłe obrażenia broni trafiają w Strain zamiast Wounds, nadal redukowane przez Soak."
+      },
+      "sunder": {
+        "name": "Sunder",
+        "description": "Uszkadza o jeden stopień jeden przedmiot używany przez cel; wybór przedmiotu pozostaje ręczny."
+      },
+      "superior": {
+        "name": "Superior",
+        "description": "Dodaje 1 automatyczny Advantage do testów związanych z przedmiotem i zwiększa bazowe obrażenia broni o 1."
+      },
+      "tractor": {
+        "name": "Tractor",
+        "description": "Po trafieniu pojazdu oznacza cel efektem Tractor o odpowiedniej randze."
+      },
+      "vicious": {
+        "name": "Vicious",
+        "description": "Dodaje +10 za rangę do rzutu na Critical Injury/Critical Hit."
+      }
+    },
+    "automation": {
+      "autofire": "Przygotowano dodatkowe trafienie Auto-Fire.",
+      "linked": "Przygotowano dodatkowe trafienie Linked.",
+      "extraHitReady": "{quality}: utworzono kartę dodatkowego trafienia ({damage} obrażeń).",
+      "blast": "Blast obejmuje postacie Engaged z celem {target}.",
+      "blastReady": "Utworzono kartę Blast na {damage} obrażeń przed Soak.",
+      "burn": "{actor} otrzymuje Burn na {rounds} rund(y); efekt okresowy wykorzystuje bazowe obrażenia {damage}.",
+      "concussive": "{actor} otrzymuje Staggered na {rounds} rund(y).",
+      "disorient": "{actor} otrzymuje Disoriented na {rounds} rund(y).",
+      "ensnare": "{actor} otrzymuje Immobilized na {rounds} rund(y).",
+      "knockdown": "{actor} zostaje powalony (Prone).",
+      "stun": "{actor} otrzymuje {strain} Strain.",
+      "guided": "Aktywowano Guided {rank} przeciwko {actor}; rozpatrz kolejny test Guided w odpowiednim momencie.",
+      "sunder": "Aktywowano Sunder przeciwko {actor}; uszkodź odpowiedni przedmiot celu o jeden stopień.",
+      "announced": "Aktywowano {quality}."
+    },
+    "damageTypes": {
+      "wounds": "Wounds",
+      "strain": "Strain",
+      "hullTrauma": "Hull Trauma",
+      "systemStrain": "System Strain"
+    },
+    "damageCard": {
+      "title": "Obrażenia broni",
+      "extraHitTitle": "{quality} — dodatkowe trafienie",
+      "blastTitle": "Blast {rank}",
+      "breakdown": "Baza {base} + {successes} Success = {total} obrażeń",
+      "flatDamage": "{total} obrażeń",
+      "apply": "Nałóż obrażenia",
+      "appliedNotice": "Nałożono {damage} obrażeń na {actor}.",
+      "appliedTitle": "Nałożono obrażenia",
+      "appliedLine": "{damage} {type}",
+      "reduction": "Soak/Armor {soak}, zignorowane {ignored}, efektywne {effective}",
+      "cortosisBlocked": "Cortosis uniemożliwia Pierce/Breach zmniejszenie Soak/Armor.",
+      "calculation": "Surowe obrażenia {raw}; {reduction}",
+      "trackChange": "Tor: {before} → {after}"
+    },
+    "errors": {
+      "generic": "Automatyzacja broni nie powiodła się.",
+      "disabled": "Automatyzacja broni jest wyłączona.",
+      "notWeaponRoll": "To nie jest rzut bronią.",
+      "notSuccessfulWeaponRoll": "Obrażenia można opublikować tylko po udanym ataku bronią.",
+      "sourceMessageMissing": "Wiadomość źródłowego rzutu już nie istnieje.",
+      "damageCardMissing": "Brakuje danych karty obrażeń.",
+      "selectOneToken": "Zaznacz dokładnie jeden własny token przed nałożeniem obrażeń.",
+      "noDamageTarget": "Brak poprawnej własnej postaci/tokenu do nałożenia obrażeń.",
+      "noGM": "Brak aktywnego GM-a.",
+      "notOwner": "Nie jesteś właścicielem wybranego celu obrażeń.",
+      "alreadyApplied": "Ta karta obrażeń została już zastosowana do tej postaci.",
+      "noDamageTrack": "Cel nie ma obsługiwanego toru Wounds/Hull Trauma.",
+      "targetMissing": "Ta jakość broni wymaga dokładnie jednego targetu.",
+      "noStrainTrack": "Cel nie ma toru Strain."
+    },
+    "criticalViciousHint": "Vicious dodaje +{modifier} do rzutu na Critical Injury/Critical Hit."
+  },
+  "criticalManager": {
+    "title": "Menedżer Critical Injuries",
+    "target": "Postać docelowa",
+    "criticalType": "Rodzaj kryta",
+    "modifier": "Modyfikator rzutu krytycznego",
+    "manualModifier": "Dodatkowy modyfikator",
+    "existingCriticals": "Istniejące Critical Injuries",
+    "totalModifier": "Łączny modyfikator",
+    "noExistingCriticals": "Postać nie ma obecnie Critical Injuries.",
+    "selectedTokenHint": "Cel jest pobierany z aktualnie zaznaczonego tokena. Jeśli zaznaczono kilka tokenów, wybierz jeden powyżej.",
+    "playerListHint": "Nie zaznaczono tokena — wybierz postać gracza z listy.",
+    "noTargets": "Nie zaznaczono tokena i nie znaleziono żadnej postaci gracza.",
+    "entriesLoaded": "wyników krytycznych wczytanych",
+    "coverage": "Zakres D100",
+    "invalidEntries": "Pominięto {count} wpis(y), ponieważ nie mają poprawnego system.min/system.max.",
+    "noFolders": "Nie znaleziono folderu Itemów z Critical Injuries. Najpierw zaimportuj Critical Injuries na stałe do folderu w świecie.",
+    "rollCritical": "Rzuć na Critical Injury",
+    "lastResult": "Ostatni Critical Injury",
+    "severity": "Poziom",
+    "addedToActor": "Dodano do karty: {actor}.",
+    "chatTitle": "Critical Injury",
+    "unknownTable": "Nieznana tabela",
+    "rollBreakdown": "D100 {roll} {manual} ręczny {existing} istniejące = {total}",
+    "existingCountChat": "Liczba istniejących Critical Injuries przed tym rzutem: {count}.",
+    "notifications": {
+      "applied": "{injury} został dodany do karty postaci {actor}."
+    },
+    "errors": {
+      "generic": "Wystąpił błąd Menedżera Critical Injuries. Szczegóły są w konsoli.",
+      "gmOnly": "Tylko GM może używać Menedżera Critical Injuries.",
+      "noTarget": "Najpierw wybierz postać docelową.",
+      "noFolder": "Wybierz folder źródłowy Critical Injuries.",
+      "noValidEntries": "Wybrany folder nie zawiera Critical Injuries z poprawnymi zakresami D100 min/max.",
+      "noMatchingRange": "Żaden Critical Injury w tym folderze nie obejmuje wyniku {total}.",
+      "applyFailed": "Nie udało się dodać Critical Injury do karty postaci."
+    }
   }
 }

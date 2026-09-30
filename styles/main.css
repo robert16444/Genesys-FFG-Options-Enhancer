@@ -1070,3 +1070,432 @@ nav.context-menu .grr-context-send-item:focus-within > a,
   #grr-request-app .grr-modifier-grid { grid-template-columns: 1fr; }
   #grr-request-app .grr-preview-character { grid-template-columns: 1fr; }
 }
+
+.gfoe-weapon-roll-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+.gfoe-publish-weapon-damage,
+.gfoe-apply-weapon-damage {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid rgba(230, 190, 120, 0.72);
+  border-radius: 5px;
+  background: rgba(15, 14, 18, 0.86);
+  color: #f3e5ca;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gfoe-publish-weapon-damage:hover:not(:disabled),
+.gfoe-apply-weapon-damage:hover:not(:disabled) {
+  background: rgba(82, 56, 32, 0.72);
+  box-shadow: 0 0 0 1px rgba(248, 210, 132, 0.34) inset;
+}
+
+.gfoe-publish-weapon-damage:disabled,
+.gfoe-apply-weapon-damage:disabled {
+  opacity: 0.56;
+  cursor: default;
+}
+
+.gfoe-weapon-damage-card,
+.gfoe-weapon-damage-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid rgba(230, 190, 120, 0.5);
+  border-radius: 7px;
+  background: linear-gradient(145deg, rgba(19,17,22,0.96), rgba(35,27,31,0.94));
+  color: #ece4d8;
+}
+
+.gfoe-weapon-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f3d58c;
+  font-weight: 800;
+  font-size: 1.05em;
+}
+
+.gfoe-weapon-card-weapon {
+  color: #fff4dc;
+}
+
+.gfoe-weapon-card-damage {
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: rgba(134, 42, 42, 0.23);
+  border: 1px solid rgba(214, 103, 90, 0.28);
+  font-weight: 700;
+}
+
+.gfoe-weapon-card-note {
+  color: rgba(236,228,216,0.78);
+  font-size: 0.92em;
+  line-height: 1.3;
+}
+
+.gfoe-weapon-quality-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.gfoe-weapon-quality-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 1px solid rgba(124, 183, 212, 0.45);
+  border-radius: 999px;
+  background: rgba(33, 73, 94, 0.34);
+  color: #d9f2ff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gfoe-weapon-roll-quality-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0 0 10px;
+  padding: 8px;
+  border: 1px solid rgba(230,190,120,0.45);
+  border-radius: 6px;
+  background: rgba(10,10,14,0.68);
+  color: #eee5d8;
+}
+
+.gfoe-weapon-roll-quality-title {
+  color: #f3d58c;
+  font-weight: 800;
+}
+
+.gfoe-weapon-roll-mods,
+.gfoe-weapon-roll-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.gfoe-weapon-roll-mods { color: #bde8c5; }
+.gfoe-weapon-roll-warnings { color: #ffd48a; }
+
+.gfoe-autofire-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 1px 0;
+  padding: 5px 7px;
+  border: 1px solid rgba(206, 91, 91, 0.45);
+  border-radius: 5px;
+  background: rgba(117, 35, 35, 0.18);
+  cursor: pointer;
+}
+
+.gfoe-autofire-toggle input { margin: 0; }
+
+.gfoe-critical-manager {
+  --gfoe-critical-bg: #0d0b10;
+  --gfoe-critical-panel: #17131a;
+  --gfoe-critical-panel-2: #211a24;
+  --gfoe-critical-input: #2d2631;
+  --gfoe-critical-border: #6f5a7d;
+  --gfoe-critical-border-soft: rgba(220, 200, 180, 0.28);
+  --gfoe-critical-text: #f0ece6;
+  --gfoe-critical-muted: #b9b0b7;
+  --gfoe-critical-accent: #d7ad72;
+  --gfoe-critical-danger: #d96b67;
+  color: var(--gfoe-critical-text);
+}
+
+.gfoe-critical-manager .window-content {
+  background: linear-gradient(150deg, rgba(11, 10, 14, 0.98), rgba(25, 19, 27, 0.98)) !important;
+  color: var(--gfoe-critical-text) !important;
+  padding: 10px !important;
+}
+
+.gfoe-critical-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--gfoe-critical-text);
+}
+
+.gfoe-critical-section {
+  padding: 10px;
+  border: 1px solid var(--gfoe-critical-border-soft);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.gfoe-critical-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  color: #f3d58c;
+  font-size: 14px;
+}
+
+.gfoe-critical-root select,
+.gfoe-critical-root input[type="number"] {
+  width: 100%;
+  min-height: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--gfoe-critical-border) !important;
+  border-radius: 5px;
+  background: var(--gfoe-critical-input) !important;
+  color: var(--gfoe-critical-text) !important;
+}
+
+.gfoe-critical-target-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 9px;
+  align-items: center;
+}
+
+.gfoe-critical-target-row > img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border: 1px solid var(--gfoe-critical-border);
+  border-radius: 6px;
+}
+
+.gfoe-critical-muted {
+  color: var(--gfoe-critical-muted);
+  font-size: 12px;
+}
+
+.gfoe-critical-section > p.gfoe-critical-muted {
+  margin: 6px 0 0;
+}
+
+.gfoe-critical-source-summary {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+  color: var(--gfoe-critical-muted);
+  font-size: 12px;
+}
+
+.gfoe-critical-source-summary strong {
+  color: var(--gfoe-critical-text);
+}
+
+.gfoe-critical-warning {
+  margin-top: 7px;
+  padding: 7px 8px;
+  border: 1px solid rgba(225, 144, 70, 0.4);
+  border-radius: 5px;
+  background: rgba(135, 76, 25, 0.2);
+  color: #ffd89d;
+  font-size: 12px;
+}
+
+.gfoe-critical-mod-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(145px, 1fr) minmax(115px, 0.75fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.gfoe-critical-mod-grid label,
+.gfoe-critical-auto-mod,
+.gfoe-critical-total-mod {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.18);
+}
+
+.gfoe-critical-mod-grid span {
+  color: var(--gfoe-critical-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.gfoe-critical-auto-mod strong,
+.gfoe-critical-total-mod strong {
+  color: #fff1c8;
+  font-size: 16px;
+}
+
+.gfoe-critical-existing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.gfoe-critical-existing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 7px 3px 4px;
+  border: 1px solid rgba(216, 98, 98, 0.4);
+  border-radius: 999px;
+  background: rgba(128, 39, 39, 0.23);
+  color: #ffd6d0;
+  font-size: 11px;
+}
+
+.gfoe-critical-existing-chip img {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.gfoe-critical-roll-button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(230, 190, 120, 0.72) !important;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(92, 42, 40, 0.82), rgba(60, 25, 28, 0.88)) !important;
+  color: #fff0d4 !important;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.gfoe-critical-roll-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(125, 53, 47, 0.9), rgba(78, 30, 31, 0.94)) !important;
+  box-shadow: 0 0 0 1px rgba(255, 216, 142, 0.28) inset;
+}
+
+.gfoe-critical-roll-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.gfoe-critical-last-result {
+  border-color: rgba(216, 98, 98, 0.48);
+  background: linear-gradient(145deg, rgba(79, 24, 28, 0.22), rgba(255,255,255,0.025));
+}
+
+.gfoe-critical-result-roll {
+  float: right;
+  min-width: 58px;
+  margin: -35px 0 5px 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(230,190,120,0.55);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.35);
+  color: #fff1c8;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.gfoe-critical-result-item {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 9px;
+  align-items: center;
+}
+
+.gfoe-critical-result-item img {
+  width: 46px;
+  height: 46px;
+  object-fit: cover;
+  border: 1px solid rgba(230,190,120,0.4);
+  border-radius: 6px;
+}
+
+.gfoe-critical-result-item strong {
+  color: #fff0d4;
+  font-size: 15px;
+}
+
+.gfoe-critical-result-item div div {
+  margin-top: 3px;
+  color: var(--gfoe-critical-muted);
+  font-size: 11px;
+}
+
+.gfoe-critical-last-result > p {
+  margin: 8px 0 0;
+  white-space: pre-line;
+  color: #e6ded5;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.gfoe-critical-applied {
+  margin-top: 8px;
+  color: #bde8c5;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gfoe-critical-chat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(174, 70, 70, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(145deg, rgba(41,16,19,0.82), rgba(20,17,22,0.86));
+  color: #ece4d8;
+}
+
+.gfoe-critical-chat-card header {
+  color: #f3d58c;
+  font-size: 14px;
+}
+
+.gfoe-critical-chat-target,
+.gfoe-critical-chat-note,
+.gfoe-critical-chat-meta {
+  color: rgba(236,228,216,0.72);
+  font-size: 11px;
+}
+
+.gfoe-critical-chat-roll {
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.06);
+  font-weight: 700;
+}
+
+.gfoe-critical-chat-result {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 7px;
+  align-items: center;
+}
+
+.gfoe-critical-chat-result img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.gfoe-critical-chat-result strong { color: #fff0d4; }
+.gfoe-critical-chat-description { line-height: 1.35; }
+
+@media (max-width: 600px) {
+  .gfoe-critical-mod-grid { grid-template-columns: 1fr; }
+}

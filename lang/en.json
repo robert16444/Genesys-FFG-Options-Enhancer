@@ -9,7 +9,8 @@
   "controls": {
     "requestRoll": "Request a Roll",
     "talentSearch": "Talent Search",
-    "itemTransfer": "Item Transfer"
+    "itemTransfer": "Item Transfer",
+    "criticalManager": "Critical Injury Manager"
   },
   "request": {
     "title": "Request a Roll",
@@ -209,7 +210,11 @@
     "resultSpenderMenuLabel": "Configure Spend Results",
     "resultSpenderMenuHint": "Add campaign-specific ways to spend narrative dice results and define their costs.",
     "enableCharacterPilotName": "Enable Character Pilot",
-    "enableCharacterPilotHint": "Shows the Character Pilot in Scene Controls. It automates turn resources, common maneuvers, strain costs, temporary effects and GM target tools."
+    "enableCharacterPilotHint": "Shows the Character Pilot in Scene Controls. It automates turn resources, common maneuvers, strain costs, temporary effects and GM target tools.",
+    "enableWeaponAutomationName": "Enable weapon automation",
+    "enableWeaponAutomationHint": "Adds Apply Damage cards, automatic soak/Pierce/Breach handling, passive weapon-quality dice modifiers and Spend Results integration for active weapon qualities.",
+    "enableCriticalManagerName": "Enable Critical Injury Manager",
+    "enableCriticalManagerHint": "Show the GM Critical Injury Manager in Scene Controls."
   },
   "resultSpender": {
     "contextLabel": "Spend Results",
@@ -508,7 +513,8 @@
     "noCurrentTarget": "The owner of this roll is not currently targeting a token. Target exactly one token first.",
     "multipleCurrentTargets": "The owner of this roll currently has multiple targets. Leave exactly one token targeted for this effect.",
     "targetChanged": "The roll owner’s current target changed. Reopen Spend Results and try again.",
-    "nextAllySlotGeneric": "Next allied initiative slot"
+    "nextAllySlotGeneric": "Next allied initiative slot",
+    "activationLimitReached": "This quality cannot be activated more than {count} time(s) from this roll."
   },
   "nextCheckEffects": {
     "hudStackTooltip": "Left click: add 1 stack. Right click: remove 1 stack. Current: {count}."
@@ -627,5 +633,231 @@
     "clearEffectsTitle": "Remove all effects?",
     "clearEffectsConfirm": "Remove all Active Effects from {name}? Effects to remove: {count}. This cannot be undone.",
     "cancel": "Cancel"
+  },
+  "weaponAutomation": {
+    "weapon": "Weapon",
+    "target": "target",
+    "rollPanelTitle": "Weapon qualities",
+    "useAutoFire": "Use Auto-Fire (+1 Difficulty)",
+    "publishDamage": "Publish Damage",
+    "damagePublished": "Damage published",
+    "activateQuality": "Activate {quality}",
+    "rollMods": {
+      "accurate": "+{count} Boost from Accurate",
+      "inaccurate": "+{count} Setback from Inaccurate",
+      "cumbersome": "+{count} Difficulty from Cumbersome (Brawn below rating)",
+      "superior": "+1 automatic Advantage from Superior",
+      "inferior": "+1 automatic Threat from Inferior"
+    },
+    "rollWarnings": {
+      "prepare": "Prepare {rank}: requires {rank} preparation maneuver(s) before attacking.",
+      "slowFiring": "Slow-Firing {rank}: remember the cooldown after firing.",
+      "limitedAmmo": "Limited Ammo {rank}: track remaining shots/reloads."
+    },
+    "qualities": {
+      "accurate": {
+        "name": "Accurate",
+        "description": "Adds Boost dice to checks made with the weapon."
+      },
+      "autofire": {
+        "name": "Auto-Fire",
+        "description": "Spend results for an additional hit. Auto-Fire also increases attack difficulty by one when enabled before the roll."
+      },
+      "breach": {
+        "name": "Breach",
+        "description": "Ignores 1 point of vehicle Armor or 10 points of personal Soak per rank, unless Cortosis applies."
+      },
+      "burn": {
+        "name": "Burn",
+        "description": "Applies Burn for a number of rounds equal to its rating."
+      },
+      "blast": {
+        "name": "Blast",
+        "description": "Deals Blast damage to characters engaged with the original target. On a miss it costs 3 Advantage."
+      },
+      "concussive": {
+        "name": "Concussive",
+        "description": "Staggers the target for rounds equal to the rating."
+      },
+      "cortosis": {
+        "name": "Cortosis",
+        "description": "Prevents Pierce and Breach from reducing Soak/Armor."
+      },
+      "cumbersome": {
+        "name": "Cumbersome",
+        "description": "Increases the difficulty of checks made with the weapon by one per point of Brawn below the rating."
+      },
+      "defensive": {
+        "name": "Defensive",
+        "description": "Increases melee defense while the weapon is wielded."
+      },
+      "deflection": {
+        "name": "Deflection",
+        "description": "Increases ranged defense while the weapon is wielded."
+      },
+      "disorient": {
+        "name": "Disorient",
+        "description": "Applies a Setback to the target’s skill checks for rounds equal to the rating."
+      },
+      "ensnare": {
+        "name": "Ensnare",
+        "description": "Immobilizes the target for rounds equal to the rating."
+      },
+      "guided": {
+        "name": "Guided",
+        "description": "After a miss, spend 3 Advantage or a Triumph to continue toward the original target; the follow-up attack remains contextual."
+      },
+      "inaccurate": {
+        "name": "Inaccurate",
+        "description": "Adds Setback dice to checks made with the weapon."
+      },
+      "inferior": {
+        "name": "Inferior",
+        "description": "Adds one automatic Threat to checks with the item and reduces weapon base damage by 1."
+      },
+      "ion": {
+        "name": "Ion",
+        "description": "Damage is applied as Strain/System Strain where possible."
+      },
+      "limitedammo": {
+        "name": "Limited Ammo",
+        "description": "The weapon has a limited number of shots before reloading."
+      },
+      "linked": {
+        "name": "Linked",
+        "description": "Spend results for additional hits, up to the Linked rating."
+      },
+      "knockdown": {
+        "name": "Knockdown",
+        "description": "Knocks the target prone; Advantage cost increases with target silhouette."
+      },
+      "pierce": {
+        "name": "Pierce",
+        "description": "Ignores personal Soak equal to the rating, unless Cortosis applies."
+      },
+      "prepare": {
+        "name": "Prepare",
+        "description": "Requires preparation maneuvers before use."
+      },
+      "slowfiring": {
+        "name": "Slow-Firing",
+        "description": "The weapon needs cooldown rounds after firing."
+      },
+      "stun": {
+        "name": "Stun",
+        "description": "Inflicts Strain equal to the Stun rating when activated."
+      },
+      "stundamage": {
+        "name": "Stun Damage",
+        "description": "Normal weapon damage is applied to Strain instead of Wounds, still reduced by Soak."
+      },
+      "sunder": {
+        "name": "Sunder",
+        "description": "Damages one item wielded by the target one step; choose the affected item manually."
+      },
+      "superior": {
+        "name": "Superior",
+        "description": "Adds one automatic Advantage to checks with the item and increases weapon base damage by 1."
+      },
+      "tractor": {
+        "name": "Tractor",
+        "description": "On a vehicle hit, marks the target with the Tractor rating."
+      },
+      "vicious": {
+        "name": "Vicious",
+        "description": "Adds +10 per rank to Critical Injury/Critical Hit rolls."
+      }
+    },
+    "automation": {
+      "autofire": "Auto-Fire extra hit prepared.",
+      "linked": "Linked extra hit prepared.",
+      "extraHitReady": "{quality}: an additional hit damage card ({damage}) was created.",
+      "blast": "Blast affects characters engaged with {target}.",
+      "blastReady": "Blast damage card created for {damage} damage before Soak.",
+      "burn": "{actor} is Burning for {rounds} round(s); each tick uses base damage {damage}.",
+      "concussive": "{actor} is Staggered for {rounds} round(s).",
+      "disorient": "{actor} is Disoriented for {rounds} round(s).",
+      "ensnare": "{actor} is Immobilized for {rounds} round(s).",
+      "knockdown": "{actor} is knocked Prone.",
+      "stun": "{actor} suffers {strain} Strain.",
+      "guided": "Guided {rank} activated against {actor}; resolve the Guided follow-up check at the appropriate time.",
+      "sunder": "Sunder activated against {actor}; damage one appropriate item one step.",
+      "announced": "{quality} activated."
+    },
+    "damageTypes": {
+      "wounds": "Wounds",
+      "strain": "Strain",
+      "hullTrauma": "Hull Trauma",
+      "systemStrain": "System Strain"
+    },
+    "damageCard": {
+      "title": "Weapon Damage",
+      "extraHitTitle": "{quality} — Additional Hit",
+      "blastTitle": "Blast {rank}",
+      "breakdown": "Base {base} + {successes} Success = {total} damage",
+      "flatDamage": "{total} damage",
+      "apply": "Apply Damage",
+      "appliedNotice": "Applied {damage} damage to {actor}.",
+      "appliedTitle": "Damage applied",
+      "appliedLine": "{damage} {type}",
+      "reduction": "Soak/Armor {soak}, ignored {ignored}, effective {effective}",
+      "cortosisBlocked": "Cortosis prevents Pierce/Breach from reducing Soak/Armor.",
+      "calculation": "Raw damage {raw}; {reduction}",
+      "trackChange": "Track: {before} → {after}"
+    },
+    "errors": {
+      "generic": "Weapon automation failed.",
+      "disabled": "Weapon automation is disabled.",
+      "notWeaponRoll": "This is not a weapon roll.",
+      "notSuccessfulWeaponRoll": "Damage can only be published from a successful weapon attack.",
+      "sourceMessageMissing": "The source roll message no longer exists.",
+      "damageCardMissing": "Damage card data is missing.",
+      "selectOneToken": "Select exactly one owned token before applying damage.",
+      "noDamageTarget": "No valid owned character/token is available for damage.",
+      "noGM": "No active GM is available.",
+      "notOwner": "You do not own the selected damage target.",
+      "alreadyApplied": "This damage card has already been applied to that character.",
+      "noDamageTrack": "The target has no supported Wounds/Hull Trauma track.",
+      "targetMissing": "The weapon quality requires exactly one target.",
+      "noStrainTrack": "The target has no Strain track."
+    },
+    "criticalViciousHint": "Vicious adds +{modifier} to the Critical Injury/Critical Hit roll."
+  },
+  "criticalManager": {
+    "title": "Critical Injury Manager",
+    "target": "Target character",
+    "criticalType": "Critical injury type",
+    "modifier": "Critical roll modifier",
+    "manualModifier": "Additional modifier",
+    "existingCriticals": "Existing Critical Injuries",
+    "totalModifier": "Total modifier",
+    "noExistingCriticals": "No existing Critical Injuries.",
+    "selectedTokenHint": "The target is taken from the currently selected token. With multiple selected tokens, choose one above.",
+    "playerListHint": "No token is selected — choose a player character.",
+    "noTargets": "No selected token and no player character is available.",
+    "entriesLoaded": "critical results loaded",
+    "coverage": "D100 coverage",
+    "invalidEntries": "{count} item(s) were skipped because system.min/system.max is missing or invalid.",
+    "noFolders": "No Item folder with Critical Injury entries was found. Import the Critical Injury items into a world folder first.",
+    "rollCritical": "Roll Critical Injury",
+    "lastResult": "Last Critical Injury",
+    "severity": "Severity",
+    "addedToActor": "Added to {actor}.",
+    "chatTitle": "Critical Injury",
+    "unknownTable": "Unknown table",
+    "rollBreakdown": "D100 {roll} {manual} manual {existing} existing = {total}",
+    "existingCountChat": "Existing Critical Injuries before this roll: {count}.",
+    "notifications": {
+      "applied": "{injury} was added to {actor}."
+    },
+    "errors": {
+      "generic": "Critical Injury Manager failed. See console for details.",
+      "gmOnly": "Only a GM can use the Critical Injury Manager.",
+      "noTarget": "Choose a target character first.",
+      "noFolder": "Choose a Critical Injury source folder.",
+      "noValidEntries": "The selected folder has no Critical Injury items with valid D100 min/max ranges.",
+      "noMatchingRange": "No Critical Injury in this folder covers result {total}.",
+      "applyFailed": "The Critical Injury could not be added to the actor."
+    }
   }
 }
