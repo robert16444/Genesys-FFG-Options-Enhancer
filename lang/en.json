@@ -219,7 +219,9 @@
     "enableCriticalManagerHint": "Show the GM Critical Injury Manager in Scene Controls.",
     "additionalDefenseSkillsName": "Additional skills using Defense",
     "additionalDefenseSkillsLabel": "Configure Defense skills",
-    "additionalDefenseSkillsHint": "Choose additional skills that should automatically read Melee Defense or Ranged Defense from the targeted token and add it as Setback dice."
+    "additionalDefenseSkillsHint": "Choose additional skills that should automatically read Melee Defense or Ranged Defense from the targeted token and add it as Setback dice.",
+    "enableCombatCarouselName": "Enable combat carousel",
+    "enableCombatCarouselHint": "Shows a Genesys initiative-slot carousel at the top of the canvas. Free PC/NPC slots can be claimed directly from the carousel."
   },
   "resultSpender": {
     "contextLabel": "Spend Results",
@@ -887,5 +889,30 @@
     "meleeDefense": "Melee Defense",
     "rangedDefense": "Ranged Defense",
     "rollApplied": "{skill}: +{count} Setback from target {defense}."
+  },
+  "combatCarousel": {
+    "pcSlot": "PC Slot",
+    "npcSlot": "NPC Slot",
+    "neutralSlot": "Neutral Slot",
+    "freeSlot": "Free slot",
+    "free": "Free",
+    "claim": "Claim",
+    "current": "Current",
+    "previous": "Previous slot",
+    "next": "Next slot",
+    "round": "Round {round}",
+    "hiddenNpc": "Hidden NPC",
+    "hiddenCombatant": "Hidden combatant",
+    "selectOneToken": "Select exactly one token that should claim this initiative slot.",
+    "notInCombat": "The selected token is not in this combat.",
+    "defeated": "A defeated combatant cannot claim an initiative slot.",
+    "alreadyHasSlot": "This combatant has already claimed a slot this round.",
+    "alreadyClaimed": "This initiative slot has already been claimed.",
+    "wrongSlotType": "The selected token cannot claim this type of initiative slot.",
+    "gmOnlyNpc": "Only the GM can claim NPC initiative slots.",
+    "claimFailed": "Could not claim the initiative slot.",
+    "unused": "Unused",
+    "onlyCurrent": "Only the current initiative slot can be claimed.",
+    "unusedSlot": "This initiative slot is currently unused and cannot be claimed."
   }
 }

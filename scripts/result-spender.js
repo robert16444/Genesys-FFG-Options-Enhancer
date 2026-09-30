@@ -462,8 +462,21 @@ function getMessageAuthorId(message) {
   return message?.author?.id ?? message?.user?.id ?? (typeof message?.user === "string" ? message.user : null);
 }
 
+function isInitiativeRollMessage(message) {
+  try {
+    if (message?.getFlag?.("core", "initiativeRoll")) return true;
+  } catch (_) {}
+  return Boolean(
+    message?.flags?.core?.initiativeRoll
+    ?? message?.flags?.["core.initiativeRoll"]
+    ?? message?._source?.flags?.core?.initiativeRoll
+    ?? message?._source?.flags?.["core.initiativeRoll"]
+  );
+}
+
 function canUserSpendFromMessage(user, message) {
   if (!user || !message) return false;
+  if (isInitiativeRollMessage(message)) return false;
   if (user.isGM) return true;
   if (getMessageAuthorId(message) === user.id) return true;
 
@@ -716,6 +729,7 @@ function safeNonNegativeInt(value, fallback = 0) {
 
 function renderRemainingResults(message, html) {
   if (!isEnabled()) return;
+  if (isInitiativeRollMessage(message)) return;
   const original = extractRollResults(message);
   if (!hasAny(original)) return;
 

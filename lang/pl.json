@@ -218,7 +218,9 @@
     "enableCriticalManagerHint": "Pokazuje narzędzie GM do losowania i nakładania Critical Injuries na lewym pasku sceny.",
     "additionalDefenseSkillsName": "Dodatkowe skille korzystające z Defense",
     "additionalDefenseSkillsLabel": "Skonfiguruj skille Defense",
-    "additionalDefenseSkillsHint": "Wybierz dodatkowe skille, które mają automatycznie pobierać Melee Defense albo Ranged Defense z zaznaczonego celu i dodawać je jako kości Setback."
+    "additionalDefenseSkillsHint": "Wybierz dodatkowe skille, które mają automatycznie pobierać Melee Defense albo Ranged Defense z zaznaczonego celu i dodawać je jako kości Setback.",
+    "enableCombatCarouselName": "Włącz karuzelę walki",
+    "enableCombatCarouselHint": "Pokazuje u góry płótna karuzelę slotów inicjatywy Genesys. Wolne sloty graczy i NPC można claimować bezpośrednio z karuzeli."
   },
   "resultSpender": {
     "contextLabel": "Wydaj wyniki",
@@ -886,5 +888,30 @@
     "meleeDefense": "Melee Defense",
     "rangedDefense": "Ranged Defense",
     "rollApplied": "{skill}: +{count} Setback z {defense} celu."
+  },
+  "combatCarousel": {
+    "pcSlot": "Slot gracza",
+    "npcSlot": "Slot NPC",
+    "neutralSlot": "Slot neutralny",
+    "freeSlot": "Wolny slot",
+    "free": "Wolny",
+    "claim": "Claim",
+    "current": "Aktualny",
+    "previous": "Poprzedni slot",
+    "next": "Następny slot",
+    "round": "Runda {round}",
+    "hiddenNpc": "Ukryty NPC",
+    "hiddenCombatant": "Ukryta postać",
+    "selectOneToken": "Zaznacz dokładnie jeden token, który ma zclaimować ten slot inicjatywy.",
+    "notInCombat": "Zaznaczony token nie bierze udziału w tej walce.",
+    "defeated": "Pokonany uczestnik nie może claimować slotu inicjatywy.",
+    "alreadyHasSlot": "Ta postać zclaimowała już slot w tej rundzie.",
+    "alreadyClaimed": "Ten slot inicjatywy jest już zajęty.",
+    "wrongSlotType": "Zaznaczony token nie może zclaimować tego rodzaju slotu.",
+    "gmOnlyNpc": "Tylko GM może claimować sloty NPC.",
+    "claimFailed": "Nie udało się zclaimować slotu inicjatywy.",
+    "unused": "Niewykorzystany",
+    "onlyCurrent": "Można claimować tylko aktualny slot inicjatywy.",
+    "unusedSlot": "Ten slot inicjatywy jest obecnie niewykorzystany i nie można go zclaimować."
   }
 }

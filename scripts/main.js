@@ -16,6 +16,7 @@ import { initializePopOutCompatibility } from "./popout-compat.js";
 import { registerWeaponAutomationSettings, registerWeaponAutomationFeature, handleWeaponAutomationSocket } from "./weapon-automation.js";
 import { openCriticalManager, initializeCriticalManager } from "./critical-manager.js";
 import { registerAdditionalDefenseSettings, registerAdditionalDefenseFeature } from "./defense-skills.js";
+import { registerCombatCarouselSettings, initializeCombatCarousel } from "./combat-carousel.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -36,6 +37,7 @@ Hooks.once("init", () => {
   try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
   try { registerWeaponAutomationSettings(); } catch (e) { console.error(`${MODULE_ID} | weapon automation settings registration failed`, e); }
   try { registerAdditionalDefenseSettings(); } catch (e) { console.error(`${MODULE_ID} | additional defense settings registration failed`, e); }
+  try { registerCombatCarouselSettings(); } catch (e) { console.error(`${MODULE_ID} | combat carousel settings registration failed`, e); }
   // Register Spend Results chat rendering during init so roll messages get the
   // remaining-results panel and its direct Spend Results button.
   try { registerResultSpenderFeature(); } catch (e) { console.error(`${MODULE_ID} | result spender registration failed`, e); }
@@ -196,6 +198,7 @@ Hooks.once("ready", async () => {
   }
   try { registerNextCheckStatusCounterIntegration(); } catch (e) { console.error(`${MODULE_ID} | Status Counter integration registration failed`, e); }
   try { registerNextCheckRollAutomation(); } catch (e) { console.error(`${MODULE_ID} | next-check roll automation registration failed`, e); }
+  try { initializeCombatCarousel(); } catch (e) { console.error(`${MODULE_ID} | combat carousel registration failed`, e); }
   if (isFeatureEnabled("enableResultSpender", true)) {
     try { registerPendingNextAllySlotAutomation(); } catch (e) { console.error(`${MODULE_ID} | pending next-ally slot automation registration failed`, e); }
   }
