@@ -1,8 +1,8 @@
 {
   "id": "genesys-ffg-options-enhancer",
   "title": "Genesys FFG Options Enhancer",
-  "description": "Enhances the Genesys FFG system with convenient tools: Roll Requests, Talent Search, Item Transfer and more.",
-  "version": "1.0.7",
+  "description": "Quality-of-life and combat enhancement module for Genesys / StarWarsFFG, including GM Roll Requests, Talent & Spell Search, Item and Currency Transfer, Spend Results, Character Pilot, weapon and damage automation, Critical Injury Manager, custom Defense skills, GM roll fudging, and a Genesys initiative Combat Carousel.",
+  "version": "1.1.0",
   "authors": [
     {
       "name": "robert16444",
@@ -21,7 +21,8 @@
   ],
   "templates": [
     "templates/request-ui.hbs",
-    "templates/result-spender-config.hbs"
+    "templates/result-spender-config.hbs",
+    "templates/defense-skills-config.hbs"
   ],
   "socket": true,
   "relationships": {
@@ -31,7 +32,7 @@
         "type": "system",
         "compatibility": {
           "minimum": "2.0.0",
-          "verified": "2.0.0",
+          "verified": "2.0.4",
           "maximum": "2.0.4"
         }
       }
@@ -57,7 +58,7 @@
     ]
   },
   "manifest": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/latest/download/module.json",
-  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/download/1.0.7/Genesys-FFG-Options-Enhancer.zip",
+  "download": "https://github.com/robert16444/Genesys-FFG-Options-Enhancer/releases/download/1.1.0/Genesys-FFG-Options-Enhancer.zip",
   "languages": [
     {
       "lang": "en",
