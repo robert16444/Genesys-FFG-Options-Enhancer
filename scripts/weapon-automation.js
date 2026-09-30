@@ -3,7 +3,9 @@ import { isElementLike, ownerDocumentOf, registerPopOutDocumentInitializer } fro
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const FEATURE_SETTING = "enableWeaponAutomation";
+const FUDGE_SETTING = "enableGMRollFudging";
 const DAMAGE_FLAG = "weaponDamageCard";
+const INLINE_DAMAGE_FLAG = "inlineWeaponDamage";
 const SOURCE_FLAG = "weaponAutomation";
 const QUALITY_EFFECT_FLAG = "weaponQualityEffect";
 
@@ -65,6 +67,11 @@ const preparedRollBuilders = new WeakSet();
 function isEnabled() {
   try { return game.settings.get(MODULE_ID, FEATURE_SETTING); }
   catch (_) { return true; }
+}
+
+function isFudgeEnabled() {
+  try { return game.settings.get(MODULE_ID, FUDGE_SETTING); }
+  catch (_) { return false; }
 }
 
 function escapeHtml(value) {
@@ -259,7 +266,11 @@ export function getWeaponRollContext(message) {
   if (!roll || !weapon) return null;
 
   const qualities = extractWeaponQualities(weapon);
-  const successes = safeNonNegativeInt(roll?.ffg?.success, 0);
+  const rolledSuccesses = safeNonNegativeInt(roll?.ffg?.success, 0);
+  const automationFlag = sourceAutomationFlag(message) ?? {};
+  const fudgedHit = Boolean(automationFlag.fudgedHit);
+  const fudgedSuccesses = Math.max(1, safeNonNegativeInt(automationFlag.fudgedSuccesses, 1));
+  const successes = fudgedHit ? fudgedSuccesses : rolledSuccesses;
   let baseDamage = weaponDamageBase(weapon);
 
   if (qualities.superior && !qualityHasConfiguredAttributes(qualities.superior)) baseDamage += 1;
@@ -281,6 +292,8 @@ export function getWeaponRollContext(message) {
     baseDamage,
     crit: weaponCrit(weapon),
     successes,
+    rolledSuccesses,
+    fudgedHit,
     hit: successes > 0,
     rawDamage: Math.max(0, safeInt(baseDamage, 0) + successes),
     qualities
@@ -459,6 +472,11 @@ function damageCardFlag(message) {
   catch (_) { return null; }
 }
 
+function inlineDamageFlag(message) {
+  try { return message?.getFlag?.(MODULE_ID, INLINE_DAMAGE_FLAG) ?? null; }
+  catch (_) { return null; }
+}
+
 function sourceAutomationFlag(message) {
   try { return message?.getFlag?.(MODULE_ID, SOURCE_FLAG) ?? null; }
   catch (_) { return null; }
@@ -541,19 +559,163 @@ async function publishBaseDamage(message) {
   return card;
 }
 
-function renderWeaponRollControls(message, html) {
-  if (!isEnabled() || !game.user?.isGM) return;
+function createInlineDamageFlag(message) {
   const context = getWeaponRollContext(message);
-  if (!context || !context.hit) return;
+  if (!context?.hit) return null;
+  const snapshot = snapshotContext(context);
+  return {
+    id: `inline-${message.id}`,
+    sourceMessageId: message.id,
+    kind: "hit",
+    rawDamage: snapshot.rawDamage,
+    allowMultipleTargets: false,
+    targetName: null,
+    weapon: cloneData(snapshot),
+    applications: []
+  };
+}
+
+function isPlayerAuthoredMessage(message) {
+  const author = getMessageAuthorUser(message);
+  return Boolean(author && !author.isGM);
+}
+
+function localizedSystemText(key, fallback) {
+  try {
+    const localized = game.i18n?.localize?.(key);
+    return localized && localized !== key ? localized : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function deepestElementWithText(root, wanted) {
+  if (!root || !wanted) return null;
+  const elements = Array.from(root.querySelectorAll?.("*") ?? []);
+  return elements.find(element => {
+    if (String(element.textContent ?? "").trim() !== wanted) return false;
+    return !Array.from(element.children ?? []).some(child => String(child.textContent ?? "").trim() === wanted);
+  }) ?? null;
+}
+
+function replaceResultCountLine(root, fromLabel, toLabel, count = 1) {
+  if (!root || !fromLabel || !toLabel) return false;
+  const escaped = fromLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(^|\\s|[•◦])${escaped}\\s*:\\s*\\d+`, "i");
+  const elements = Array.from(root.querySelectorAll?.("li, div, p, span") ?? []);
+  for (const element of elements) {
+    if (element.children?.length) continue;
+    const text = String(element.textContent ?? "");
+    if (!regex.test(text)) continue;
+    element.textContent = text.replace(regex, match => {
+      const prefix = match.match(/^(\s|[•◦])*/)?.[0] ?? "";
+      return `${prefix}${toLabel}: ${Math.max(1, safeNonNegativeInt(count, 1))}`;
+    });
+    element.classList?.add?.("gfoe-fudged-success-count");
+    return true;
+  }
+  return false;
+}
+
+function decorateFudgedRoll(message, html) {
+  const automationFlag = sourceAutomationFlag(message) ?? {};
+  if (!automationFlag.fudgedHit) return;
   const root = isElementLike(html) ? html : (isElementLike(html?.[0]) ? html[0] : null);
-  if (!root || root.querySelector(".gfoe-publish-weapon-damage")) return;
+  if (!root || root.dataset?.gfoeFudgedDecorated === "true") return;
+  if (root.dataset) root.dataset.gfoeFudgedDecorated = "true";
+
+  const failedText = localizedSystemText("SWFFG.RollFailure", "Check failed!");
+  const successText = localizedSystemText("SWFFG.RollSucceeded", "Check succeeded!");
+  const failureLabel = localizedSystemText("SWFFG.RollResultFailure", "Failures");
+  const successLabel = localizedSystemText("SWFFG.RollResultSuccess", "Successes");
+
+  const status = deepestElementWithText(root, failedText);
+  if (status) {
+    status.textContent = successText;
+    status.classList?.add?.("gfoe-fudged-roll-success");
+  }
+
+  const fudgedSuccesses = Math.max(1, safeNonNegativeInt(automationFlag.fudgedSuccesses, 1));
+  const replacedCount = replaceResultCountLine(root, failureLabel, successLabel, fudgedSuccesses);
+  if (!replacedCount) {
+    const alreadyHasSuccess = Array.from(root.querySelectorAll?.("li, div, p, span") ?? [])
+      .some(element => String(element.textContent ?? "").trim().startsWith(`${successLabel}:`));
+    if (!alreadyHasSuccess && status?.parentElement) {
+      const row = ownerDocumentOf(root).createElement("div");
+      row.className = "gfoe-fudged-success-count";
+      row.textContent = `◦ ${successLabel}: ${fudgedSuccesses}`;
+      status.insertAdjacentElement?.("afterend", row);
+    }
+  }
+}
+
+async function forceWeaponHit(message, successes = 1) {
+  if (!game.user?.isGM || !isFudgeEnabled()) return;
+  const context = getWeaponRollContext(message);
+  if (!context || context.hit) return;
+  const previous = sourceAutomationFlag(message) ?? {};
+  const fudgedSuccesses = Math.max(1, safeNonNegativeInt(successes, 1));
+  await message.setFlag(MODULE_ID, SOURCE_FLAG, {
+    ...previous,
+    fudgedHit: true,
+    fudgedSuccesses,
+    fudgedAt: Date.now(),
+    fudgedByUserId: game.user.id
+  });
+
+  if (isEnabled() && !isPlayerAuthoredMessage(message)) await publishBaseDamage(message);
+}
+
+function renderWeaponRollControls(message, html) {
+  if (!game.user?.isGM) return;
+  const damageEnabled = isEnabled();
+  const fudgeEnabled = isFudgeEnabled();
+  if (!damageEnabled && !fudgeEnabled) return;
+  const context = getWeaponRollContext(message);
+  if (!context) return;
+  const root = isElementLike(html) ? html : (isElementLike(html?.[0]) ? html[0] : null);
+  if (!root || root.querySelector(".gfoe-weapon-roll-actions")) return;
   const target = root.querySelector(".message-content") ?? root;
   const wrapper = ownerDocumentOf(target).createElement("div");
   wrapper.className = "gfoe-weapon-roll-actions";
-  const published = Boolean(sourceAutomationFlag(message)?.damagePublishedMessageId);
-  wrapper.innerHTML = `<button type="button" class="gfoe-publish-weapon-damage" data-message-id="${escapeHtml(message.id)}" ${published ? "disabled" : ""}>
-    <i class="fa-solid fa-burst"></i> ${escapeHtml(published ? Lang.t("weaponAutomation.damagePublished") : Lang.t("weaponAutomation.publishDamage"))}
-  </button>`;
+  const controls = [];
+
+  if (damageEnabled && context.hit) {
+    if (isPlayerAuthoredMessage(message)) {
+      const applications = Array.isArray(inlineDamageFlag(message)?.applications) ? inlineDamageFlag(message).applications : [];
+      const applied = applications.length > 0;
+      controls.push(`<button type="button" class="gfoe-apply-weapon-damage gfoe-apply-inline-weapon-damage" data-message-id="${escapeHtml(message.id)}" ${applied ? "disabled" : ""}>
+        <i class="fa-solid ${applied ? "fa-check" : "fa-heart-crack"}"></i> ${escapeHtml(applied ? Lang.t("weaponAutomation.damageApplied") : Lang.t("weaponAutomation.damageCard.apply"))}
+      </button>`);
+      if (applied) {
+        const latest = applications.at(-1);
+        controls.push(`<div class="gfoe-inline-damage-summary"><i class="fa-solid fa-check"></i> ${escapeHtml(Lang.t("weaponAutomation.inlineDamageSummary", {
+          actor: latest?.actorName ?? "?",
+          damage: safeNonNegativeInt(latest?.netDamage, 0)
+        }))}</div>`);
+      }
+    } else {
+      const published = Boolean(sourceAutomationFlag(message)?.damagePublishedMessageId);
+      controls.push(`<button type="button" class="gfoe-publish-weapon-damage" data-message-id="${escapeHtml(message.id)}" ${published ? "disabled" : ""}>
+        <i class="fa-solid ${published ? "fa-check" : "fa-burst"}"></i> ${escapeHtml(published ? Lang.t("weaponAutomation.damagePublished") : Lang.t("weaponAutomation.publishDamage"))}
+      </button>`);
+    }
+  }
+
+  if (fudgeEnabled && !context.hit) {
+    controls.push(`<div class="gfoe-fudge-weapon-hit-control">
+      <label class="gfoe-fudge-successes-label">
+        <span>${escapeHtml(Lang.t("weaponAutomation.fudgeSuccesses"))}</span>
+        <input type="number" class="gfoe-fudge-successes" min="1" step="1" value="1" inputmode="numeric" aria-label="${escapeHtml(Lang.t("weaponAutomation.fudgeSuccesses"))}">
+      </label>
+      <button type="button" class="gfoe-fudge-weapon-hit" data-message-id="${escapeHtml(message.id)}">
+        <i class="fa-solid fa-dice"></i> ${escapeHtml(Lang.t("weaponAutomation.fudgeHit"))}
+      </button>
+    </div>`);
+  }
+
+  if (!controls.length) return;
+  wrapper.innerHTML = controls.join("");
   target.appendChild(wrapper);
 }
 
@@ -564,6 +726,30 @@ function bindDocument(doc) {
 }
 
 async function onDocumentClick(event) {
+  const fudge = event.target?.closest?.(".gfoe-fudge-weapon-hit");
+  if (fudge) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!game.user?.isGM || !isFudgeEnabled()) return;
+    const message = game.messages?.get?.(fudge.dataset.messageId);
+    if (!message) return ui.notifications?.warn(Lang.t("weaponAutomation.errors.sourceMessageMissing"));
+    const control = fudge.closest?.(".gfoe-fudge-weapon-hit-control");
+    const input = control?.querySelector?.(".gfoe-fudge-successes");
+    const successes = Math.max(1, safeNonNegativeInt(input?.value, 1));
+    if (input) input.value = String(successes);
+    fudge.disabled = true;
+    if (input) input.disabled = true;
+    try {
+      await forceWeaponHit(message, successes);
+    } catch (err) {
+      fudge.disabled = false;
+      if (input) input.disabled = false;
+      console.error(`${MODULE_ID} | weapon automation | fudge hit failed`, err);
+      ui.notifications?.error(err?.message || Lang.t("weaponAutomation.errors.generic"));
+    }
+    return;
+  }
+
   const publish = event.target?.closest?.(".gfoe-publish-weapon-damage");
   if (publish) {
     event.preventDefault();
@@ -590,13 +776,15 @@ async function onDocumentClick(event) {
     const cardRoot = apply.closest?.("[data-message-id]") ?? apply.closest?.("[data-document-id]") ?? apply.closest?.("[data-entry-id]");
     const messageId = cardRoot?.dataset?.messageId ?? cardRoot?.dataset?.documentId ?? cardRoot?.dataset?.entryId;
     const message = messageId ? game.messages?.get?.(messageId) : null;
-    if (!message || !damageCardFlag(message)) return ui.notifications?.warn(Lang.t("weaponAutomation.errors.damageCardMissing"));
+    const inline = apply.classList?.contains?.("gfoe-apply-inline-weapon-damage");
+    if (!message || (!inline && !damageCardFlag(message))) return ui.notifications?.warn(Lang.t("weaponAutomation.errors.damageCardMissing"));
+    if (inline && !game.user?.isGM) return;
 
     const targetRef = resolveSelectedDamageTargetRef(game.user);
     if (!targetRef) return;
     apply.disabled = true;
     try {
-      await requestApplyDamage(message.id, targetRef);
+      await requestApplyDamage(message.id, targetRef, { inline });
     } finally {
       setTimeout(() => { try { apply.disabled = false; } catch (_) {} }, 500);
     }
@@ -637,14 +825,15 @@ function resolveSelectedDamageTargetRef(user) {
   return null;
 }
 
-async function requestApplyDamage(cardMessageId, targetRef) {
+async function requestApplyDamage(cardMessageId, targetRef, { inline = false } = {}) {
   const gm = getPrimaryGM();
   if (!gm) return ui.notifications?.error(Lang.t("weaponAutomation.errors.noGM"));
   const payload = {
     type: MSG.APPLY_DAMAGE,
     cardMessageId,
     targetRef,
-    requestingUserId: game.user.id
+    requestingUserId: game.user.id,
+    inline: Boolean(inline)
   };
   if (isPrimaryGM()) await processApplyDamage(payload);
   else game.socket?.emit?.(`module.${MODULE_ID}`, payload);
@@ -753,7 +942,12 @@ async function processApplyDamage(payload) {
   const cardMessage = game.messages?.get?.(payload.cardMessageId);
   if (!requester || !cardMessage) return;
   if (!isEnabled()) return sendFeedback(requester.id, Lang.t("weaponAutomation.errors.disabled"));
-  const flag = cloneData(damageCardFlag(cardMessage));
+  const inline = Boolean(payload.inline);
+  if (inline && !requester.isGM) return sendFeedback(requester.id, Lang.t("weaponAutomation.errors.notOwner"));
+
+  const flag = cloneData(inline
+    ? (inlineDamageFlag(cardMessage) ?? createInlineDamageFlag(cardMessage))
+    : damageCardFlag(cardMessage));
   if (!flag) return sendFeedback(requester.id, Lang.t("weaponAutomation.errors.damageCardMissing"));
 
   const { actor, tokenDocument } = await resolveActorRef(payload.targetRef);
@@ -767,6 +961,9 @@ async function processApplyDamage(payload) {
 
   const targetKey = tokenDocument?.uuid ?? actor.uuid ?? actor.id;
   const applications = Array.isArray(flag.applications) ? flag.applications : [];
+  if (inline && !flag.allowMultipleTargets && applications.length > 0) {
+    return sendFeedback(requester.id, Lang.t("weaponAutomation.errors.alreadyApplied"));
+  }
   if (applications.some(entry => entry?.targetRef === targetKey)) {
     return sendFeedback(requester.id, Lang.t("weaponAutomation.errors.alreadyApplied"));
   }
@@ -782,12 +979,15 @@ async function processApplyDamage(payload) {
     actorName: actor.name,
     byUserId: requester.id,
     at: Date.now(),
-    netDamage: calc.netDamage
+    netDamage: calc.netDamage,
+    damageType: calc.damageType,
+    before: calc.before,
+    after: calc.after
   });
   flag.applications = applications;
-  await cardMessage.setFlag(MODULE_ID, DAMAGE_FLAG, flag);
+  await cardMessage.setFlag(MODULE_ID, inline ? INLINE_DAMAGE_FLAG : DAMAGE_FLAG, flag);
 
-  await postDamageAppliedMessage(cardMessage, requester, actor, calc);
+  if (!inline) await postDamageAppliedMessage(cardMessage, requester, actor, calc);
   await maybeApplyPassiveOnHitQualityEffects(cardMessage, actor, flag.weapon);
   await sendFeedback(requester.id, Lang.t("weaponAutomation.damageCard.appliedNotice", { damage: calc.netDamage, actor: actor.name }), "info");
 }
@@ -1174,6 +1374,18 @@ export function registerWeaponAutomationSettings() {
         setTimeout(() => { try { window.location.reload(); } catch (_) {} }, 100);
       }
     });
+    game.settings.register(MODULE_ID, FUDGE_SETTING, {
+      name: game.i18n?.localize?.("settings.enableGMRollFudgingName") ?? "Enable GM roll fudging",
+      hint: game.i18n?.localize?.("settings.enableGMRollFudgingHint") ?? "Adds a GM-only button to failed weapon attacks that can force the attack to count and display as a hit.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: false,
+      onChange: () => {
+        try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {}
+        setTimeout(() => { try { window.location.reload(); } catch (_) {} }, 100);
+      }
+    });
   } catch (err) {
     console.error(`${MODULE_ID} | weapon automation | settings registration failed`, err);
   }
@@ -1186,6 +1398,8 @@ export function registerWeaponAutomationFeature() {
   bindDocument(globalThis.document);
 
   Hooks.on("renderChatMessageHTML", (message, html) => {
+    try { decorateFudgedRoll(message, html); }
+    catch (err) { console.warn(`${MODULE_ID} | weapon automation | fudged roll decoration failed`, err); }
     try { renderWeaponRollControls(message, html); }
     catch (err) { console.warn(`${MODULE_ID} | weapon automation | render chat controls failed`, err); }
   });

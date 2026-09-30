@@ -212,8 +212,13 @@
     "enableCharacterPilotHint": "Pokazuje Pilota postaci w narzędziach sceny. Automatyzuje zasoby tury, typowe manewry, koszty Strain, efekty tymczasowe i szybkie narzędzia GM.",
     "enableWeaponAutomationName": "Włącz automatyzację broni",
     "enableWeaponAutomationHint": "Dodaje karty Apply Damage, automatyczne liczenie Soak/Pierce/Breach, pasywne modyfikatory kości z jakości broni oraz integrację aktywnych jakości z Wydawaniem wyników.",
+    "enableGMRollFudgingName": "Włącz fudgowanie rzutów przez GM",
+    "enableGMRollFudgingHint": "Dodaje tylko GM przycisk przy nieudanych atakach bronią. GM może wymusić trafienie, a rzut zostanie pokazany graczom jako udany.",
     "enableCriticalManagerName": "Włącz Menedżer obrażeń krytycznych",
-    "enableCriticalManagerHint": "Pokazuje narzędzie GM do losowania i nakładania Critical Injuries na lewym pasku sceny."
+    "enableCriticalManagerHint": "Pokazuje narzędzie GM do losowania i nakładania Critical Injuries na lewym pasku sceny.",
+    "additionalDefenseSkillsName": "Dodatkowe skille korzystające z Defense",
+    "additionalDefenseSkillsLabel": "Skonfiguruj skille Defense",
+    "additionalDefenseSkillsHint": "Wybierz dodatkowe skille, które mają automatycznie pobierać Melee Defense albo Ranged Defense z zaznaczonego celu i dodawać je jako kości Setback."
   },
   "resultSpender": {
     "contextLabel": "Wydaj wyniki",
@@ -640,6 +645,9 @@
     "useAutoFire": "Użyj Auto-Fire (+1 Difficulty)",
     "publishDamage": "Pokaż obrażenia",
     "damagePublished": "Obrażenia opublikowane",
+    "damageApplied": "Obrażenia nałożone",
+    "inlineDamageSummary": "Nałożono {damage} obrażeń na {actor}.",
+    "fudgeHit": "Wymuś trafienie",
     "activateQuality": "Aktywuj {quality}",
     "rollMods": {
       "accurate": "+{count} Boost z Accurate",
@@ -820,7 +828,8 @@
       "targetMissing": "Ta jakość broni wymaga dokładnie jednego targetu.",
       "noStrainTrack": "Cel nie ma toru Strain."
     },
-    "criticalViciousHint": "Vicious dodaje +{modifier} do rzutu na Critical Injury/Critical Hit."
+    "criticalViciousHint": "Vicious dodaje +{modifier} do rzutu na Critical Injury/Critical Hit.",
+    "fudgeSuccesses": "Sukcesy"
   },
   "criticalManager": {
     "title": "Menedżer Critical Injuries",
@@ -858,5 +867,24 @@
       "noMatchingRange": "Żaden Critical Injury w tym folderze nie obejmuje wyniku {total}.",
       "applyFailed": "Nie udało się dodać Critical Injury do karty postaci."
     }
+  },
+  "defenseSkills": {
+    "title": "Dodatkowe skille Defense",
+    "intro": "Przypisz dodatkowe skille do Melee Defense albo Ranged Defense. Gdy wykonujesz test takiego skilla i masz zaznaczony token jako cel, jego Defense zostanie automatycznie dodane do puli jako kości Setback.",
+    "systemNote": "Standardowe skille bojowe obsługiwane natywnie przez StarWarsFFG są oznaczone poniżej i nie można ich przypisać ponownie — zapobiega to podwójnemu doliczaniu Defense.",
+    "skillHeader": "Skill",
+    "noneHeader": "Brak",
+    "meleeHeader": "Melee Defense",
+    "rangedHeader": "Ranged Defense",
+    "nativeHeader": "Obsługa systemowa",
+    "searchPlaceholder": "Szukaj skilla po nazwie lub ID…",
+    "noSkills": "Nie znaleziono żadnych skilli w aktywnym zestawie ani na postaciach w świecie.",
+    "save": "Zapisz ustawienia",
+    "saved": "Zapisano konfigurację dodatkowych skilli Defense.",
+    "nativeMelee": "Natywnie: Melee Defense",
+    "nativeRanged": "Natywnie: Ranged Defense",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "rollApplied": "{skill}: +{count} Setback z {defense} celu."
   }
 }

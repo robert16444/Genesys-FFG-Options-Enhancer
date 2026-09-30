@@ -1073,6 +1073,7 @@ nav.context-menu .grr-context-send-item:focus-within > a,
 
 .gfoe-weapon-roll-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
   margin-top: 8px;
@@ -1081,7 +1082,8 @@ nav.context-menu .grr-context-send-item:focus-within > a,
 }
 
 .gfoe-publish-weapon-damage,
-.gfoe-apply-weapon-damage {
+.gfoe-apply-weapon-damage,
+.gfoe-fudge-weapon-hit {
   min-height: 30px;
   padding: 5px 10px;
   border: 1px solid rgba(230, 190, 120, 0.72);
@@ -1093,15 +1095,38 @@ nav.context-menu .grr-context-send-item:focus-within > a,
 }
 
 .gfoe-publish-weapon-damage:hover:not(:disabled),
-.gfoe-apply-weapon-damage:hover:not(:disabled) {
+.gfoe-apply-weapon-damage:hover:not(:disabled),
+.gfoe-fudge-weapon-hit:hover:not(:disabled) {
   background: rgba(82, 56, 32, 0.72);
   box-shadow: 0 0 0 1px rgba(248, 210, 132, 0.34) inset;
 }
 
 .gfoe-publish-weapon-damage:disabled,
-.gfoe-apply-weapon-damage:disabled {
+.gfoe-apply-weapon-damage:disabled,
+.gfoe-fudge-weapon-hit:disabled {
   opacity: 0.56;
   cursor: default;
+}
+
+.gfoe-fudge-weapon-hit {
+  border-color: rgba(181, 134, 255, 0.75);
+}
+
+.gfoe-fudge-weapon-hit:hover:not(:disabled) {
+  background: rgba(70, 43, 104, 0.76);
+  box-shadow: 0 0 0 1px rgba(205, 171, 255, 0.34) inset;
+}
+
+.gfoe-inline-damage-summary {
+  flex: 1 1 100%;
+  font-size: 0.9em;
+  opacity: 0.9;
+  text-align: right;
+}
+
+.gfoe-fudged-roll-success,
+.gfoe-fudged-success-count {
+  color: #159447 !important;
 }
 
 .gfoe-weapon-damage-card,
@@ -1498,4 +1523,173 @@ nav.context-menu .grr-context-send-item:focus-within > a,
 
 @media (max-width: 600px) {
   .gfoe-critical-mod-grid { grid-template-columns: 1fr; }
+}
+
+.gfoe-defense-skills-config .window-content {
+  padding: 12px;
+}
+
+.gfoe-defense-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.gfoe-defense-system-note {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(90, 150, 115, 0.35);
+  border-radius: 6px;
+  background: rgba(70, 120, 90, 0.08);
+}
+
+.gfoe-defense-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gfoe-defense-search-wrap > i {
+  opacity: 0.7;
+}
+
+.gfoe-defense-search-wrap input {
+  flex: 1;
+}
+
+.gfoe-defense-skills-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border-light-2, rgba(127, 127, 127, 0.35));
+  border-radius: 6px;
+}
+
+.gfoe-defense-skills-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+}
+
+.gfoe-defense-skills-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg, rgba(25, 25, 25, 0.96));
+}
+
+.gfoe-defense-skills-table th,
+.gfoe-defense-skills-table td {
+  padding: 7px 8px;
+  vertical-align: middle;
+}
+
+.gfoe-defense-skills-table tbody tr + tr td {
+  border-top: 1px solid rgba(127, 127, 127, 0.18);
+}
+
+.gfoe-defense-skills-table code {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.gfoe-defense-choice {
+  width: 105px;
+  text-align: center;
+}
+
+.gfoe-defense-choice input[type="radio"] {
+  margin: 0 auto;
+}
+
+.gfoe-defense-native-row {
+  opacity: 0.72;
+}
+
+.gfoe-defense-native-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(80, 145, 100, 0.16);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.gfoe-defense-config-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.gfoe-defense-config-footer button {
+  min-width: 180px;
+}
+
+.gfoe-additional-defense-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(90, 150, 115, 0.42);
+  border-radius: 6px;
+  background: rgba(70, 120, 90, 0.12);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.gfoe-additional-defense-notice > i {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 700px) {
+  .gfoe-defense-skills-table th:nth-child(5),
+  .gfoe-defense-skills-table td:nth-child(5) {
+    display: none;
+  }
+
+  .gfoe-defense-choice {
+    width: 78px;
+  }
+}
+
+.gfoe-fudge-weapon-hit-control {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.gfoe-fudge-successes-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 1px solid rgba(181, 134, 255, 0.5);
+  border-radius: 5px;
+  background: rgba(39, 29, 52, 0.62);
+  color: #eadcff;
+  font-size: 0.9em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gfoe-fudge-successes {
+  width: 46px;
+  min-width: 46px;
+  height: 28px;
+  padding: 2px 4px;
+  border: 1px solid rgba(205, 171, 255, 0.6);
+  border-radius: 4px;
+  background: rgba(15, 14, 18, 0.9);
+  color: #f3e5ff;
+  text-align: center;
+  font-weight: 700;
+}
+
+.gfoe-fudge-successes:disabled {
+  opacity: 0.56;
 }

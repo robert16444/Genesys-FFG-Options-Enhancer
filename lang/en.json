@@ -213,8 +213,13 @@
     "enableCharacterPilotHint": "Shows the Character Pilot in Scene Controls. It automates turn resources, common maneuvers, strain costs, temporary effects and GM target tools.",
     "enableWeaponAutomationName": "Enable weapon automation",
     "enableWeaponAutomationHint": "Adds Apply Damage cards, automatic soak/Pierce/Breach handling, passive weapon-quality dice modifiers and Spend Results integration for active weapon qualities.",
+    "enableGMRollFudgingName": "Enable GM roll fudging",
+    "enableGMRollFudgingHint": "Adds a GM-only button to failed weapon attacks. The GM can force the attack to count and display as a successful hit.",
     "enableCriticalManagerName": "Enable Critical Injury Manager",
-    "enableCriticalManagerHint": "Show the GM Critical Injury Manager in Scene Controls."
+    "enableCriticalManagerHint": "Show the GM Critical Injury Manager in Scene Controls.",
+    "additionalDefenseSkillsName": "Additional skills using Defense",
+    "additionalDefenseSkillsLabel": "Configure Defense skills",
+    "additionalDefenseSkillsHint": "Choose additional skills that should automatically read Melee Defense or Ranged Defense from the targeted token and add it as Setback dice."
   },
   "resultSpender": {
     "contextLabel": "Spend Results",
@@ -641,6 +646,9 @@
     "useAutoFire": "Use Auto-Fire (+1 Difficulty)",
     "publishDamage": "Publish Damage",
     "damagePublished": "Damage published",
+    "damageApplied": "Damage applied",
+    "inlineDamageSummary": "Applied {damage} damage to {actor}.",
+    "fudgeHit": "Force Hit",
     "activateQuality": "Activate {quality}",
     "rollMods": {
       "accurate": "+{count} Boost from Accurate",
@@ -821,7 +829,8 @@
       "targetMissing": "The weapon quality requires exactly one target.",
       "noStrainTrack": "The target has no Strain track."
     },
-    "criticalViciousHint": "Vicious adds +{modifier} to the Critical Injury/Critical Hit roll."
+    "criticalViciousHint": "Vicious adds +{modifier} to the Critical Injury/Critical Hit roll.",
+    "fudgeSuccesses": "Successes"
   },
   "criticalManager": {
     "title": "Critical Injury Manager",
@@ -859,5 +868,24 @@
       "noMatchingRange": "No Critical Injury in this folder covers result {total}.",
       "applyFailed": "The Critical Injury could not be added to the actor."
     }
+  },
+  "defenseSkills": {
+    "title": "Additional Defense skills",
+    "intro": "Assign additional skills to Melee Defense or Ranged Defense. When you roll one of these skills while targeting a token, that target’s Defense is automatically added to the pool as Setback dice.",
+    "systemNote": "Standard combat skills already handled by StarWarsFFG are marked below and cannot be assigned again, preventing Defense from being counted twice.",
+    "skillHeader": "Skill",
+    "noneHeader": "None",
+    "meleeHeader": "Melee Defense",
+    "rangedHeader": "Ranged Defense",
+    "nativeHeader": "System handling",
+    "searchPlaceholder": "Search skills by name or ID…",
+    "noSkills": "No skills were found in the active skill set or on actors in this world.",
+    "save": "Save settings",
+    "saved": "Additional Defense skill configuration saved.",
+    "nativeMelee": "Native: Melee Defense",
+    "nativeRanged": "Native: Ranged Defense",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "rollApplied": "{skill}: +{count} Setback from target {defense}."
   }
 }

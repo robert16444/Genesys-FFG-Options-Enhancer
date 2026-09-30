@@ -15,6 +15,7 @@ import { openCharacterPilot, initializeCharacterPilot, handleCharacterPilotSocke
 import { initializePopOutCompatibility } from "./popout-compat.js";
 import { registerWeaponAutomationSettings, registerWeaponAutomationFeature, handleWeaponAutomationSocket } from "./weapon-automation.js";
 import { openCriticalManager, initializeCriticalManager } from "./critical-manager.js";
+import { registerAdditionalDefenseSettings, registerAdditionalDefenseFeature } from "./defense-skills.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -34,10 +35,12 @@ Hooks.once("init", () => {
   try { initializePopOutCompatibility(); } catch (e) { console.warn(`${MODULE_ID} | PopOut compatibility initialization failed`, e); }
   try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
   try { registerWeaponAutomationSettings(); } catch (e) { console.error(`${MODULE_ID} | weapon automation settings registration failed`, e); }
+  try { registerAdditionalDefenseSettings(); } catch (e) { console.error(`${MODULE_ID} | additional defense settings registration failed`, e); }
   // Register Spend Results chat rendering during init so roll messages get the
   // remaining-results panel and its direct Spend Results button.
   try { registerResultSpenderFeature(); } catch (e) { console.error(`${MODULE_ID} | result spender registration failed`, e); }
   try { registerWeaponAutomationFeature(); } catch (e) { console.error(`${MODULE_ID} | weapon automation registration failed`, e); }
+  try { registerAdditionalDefenseFeature(); } catch (e) { console.error(`${MODULE_ID} | additional defense feature registration failed`, e); }
 
   try {
     game.settings.register(MODULE_ID, "activationCostLabel", {
