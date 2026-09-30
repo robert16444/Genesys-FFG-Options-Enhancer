@@ -3,6 +3,20 @@ import { RollRequestApp } from "./request-app.js";
 import { Lang } from "./i18n.js";
 import { registerItemTransferFeature, handleItemTransferSocket } from "./item-transfer.js";
 import { openTalentSearch } from "./talent-search.js";
+import { registerResultSpenderSettings, registerResultSpenderFeature, handleResultSpenderSocket } from "./result-spender.js";
+import { registerVisionStatusEffects, registerGuardedStanceAutomation } from "./status-effects.js";
+import {
+  registerNextCheckRollAutomation,
+  registerPendingNextAllySlotAutomation,
+  registerNextCheckStatusCounterIntegration,
+  applyNextCheckDifficultyUpgradeToPool
+} from "./next-check-effects.js";
+import { openCharacterPilot, initializeCharacterPilot, handleCharacterPilotSocket } from "./character-pilot.js";
+import { initializePopOutCompatibility } from "./popout-compat.js";
+import { registerWeaponAutomationSettings, registerWeaponAutomationFeature, handleWeaponAutomationSocket } from "./weapon-automation.js";
+import { openCriticalManager, initializeCriticalManager } from "./critical-manager.js";
+import { registerAdditionalDefenseSettings, registerAdditionalDefenseFeature } from "./defense-skills.js";
+import { registerCombatCarouselSettings, initializeCombatCarousel } from "./combat-carousel.js";
 
 const MODULE_ID = "genesys-ffg-options-enhancer";
 const DEBUG = false;
@@ -19,6 +33,17 @@ function isFeatureEnabled(key, fallback = true) {
 }
 
 Hooks.once("init", () => {
+  try { initializePopOutCompatibility(); } catch (e) { console.warn(`${MODULE_ID} | PopOut compatibility initialization failed`, e); }
+  try { registerResultSpenderSettings(); } catch (e) { console.error(`${MODULE_ID} | result spender settings registration failed`, e); }
+  try { registerWeaponAutomationSettings(); } catch (e) { console.error(`${MODULE_ID} | weapon automation settings registration failed`, e); }
+  try { registerAdditionalDefenseSettings(); } catch (e) { console.error(`${MODULE_ID} | additional defense settings registration failed`, e); }
+  try { registerCombatCarouselSettings(); } catch (e) { console.error(`${MODULE_ID} | combat carousel settings registration failed`, e); }
+  // Register Spend Results chat rendering during init so roll messages get the
+  // remaining-results panel and its direct Spend Results button.
+  try { registerResultSpenderFeature(); } catch (e) { console.error(`${MODULE_ID} | result spender registration failed`, e); }
+  try { registerWeaponAutomationFeature(); } catch (e) { console.error(`${MODULE_ID} | weapon automation registration failed`, e); }
+  try { registerAdditionalDefenseFeature(); } catch (e) { console.error(`${MODULE_ID} | additional defense feature registration failed`, e); }
+
   try {
     game.settings.register(MODULE_ID, "activationCostLabel", {
       name: game.i18n?.localize?.("settings.activationCostLabelName") ?? "Activation cost label",
@@ -64,6 +89,24 @@ Hooks.once("init", () => {
       default: true,
       onChange: (v) => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
     });
+    game.settings.register(MODULE_ID, "enableCharacterPilot", {
+      name: game.i18n?.localize?.("settings.enableCharacterPilotName") ?? "Enable Character Pilot",
+      hint: game.i18n?.localize?.("settings.enableCharacterPilotHint") ?? "Show the Character Pilot automation tool in Scene Controls.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
+    game.settings.register(MODULE_ID, "enableCriticalManager", {
+      name: game.i18n?.localize?.("settings.enableCriticalManagerName") ?? "Enable Critical Injury Manager",
+      hint: game.i18n?.localize?.("settings.enableCriticalManagerHint") ?? "Show the GM Critical Injury Manager in Scene Controls.",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => { try { if (game.user?.isGM && game.socket) game.socket.emit(`module.${MODULE_ID}`, { type: "reloadAll" }); } catch (_) {} setTimeout(() => { try { window.location.reload(); } catch(e) {} }, 100); }
+    });
   } catch (e) { console.error(MODULE_ID, e); }
 
   dbg("init");
@@ -107,11 +150,58 @@ Hooks.once("init", () => {
       visible: true,
       onClick: () => openTalentSearch()
     });
+
+    if (isFeatureEnabled("enableCharacterPilot", true)) addTool({
+      name: "gfoe-character-pilot",
+      title: Lang.t("pilot.title"),
+      icon: "fas fa-gamepad",
+      button: true,
+      visible: true,
+      onClick: () => openCharacterPilot()
+    });
+
+    if (game.user?.isGM && isFeatureEnabled("enableCriticalManager", true)) addTool({
+      name: "gfoe-critical-manager",
+      title: Lang.t("criticalManager.title"),
+      icon: "fas fa-heart-crack",
+      button: true,
+      visible: true,
+      onClick: () => openCriticalManager()
+    });
   });
+});
+
+
+Hooks.once("setup", () => {
+  try {
+    registerVisionStatusEffects();
+  } catch (e) {
+    console.error(`${MODULE_ID} | vision status effects registration failed`, e);
+  }
+  try {
+    registerGuardedStanceAutomation();
+  } catch (e) {
+    console.error(`${MODULE_ID} | guarded stance automation registration failed`, e);
+  }
 });
 
 Hooks.once("ready", async () => {
   dbg("ready", { user: game.user?.name, id: game.user?.id, isGM: game.user?.isGM });
+
+  try { registerVisionStatusEffects(); } catch (e) { console.error(`${MODULE_ID} | vision status effects refresh failed`, e); }
+  try { registerGuardedStanceAutomation(); } catch (e) { console.error(`${MODULE_ID} | guarded stance automation refresh failed`, e); }
+  if (isFeatureEnabled("enableCharacterPilot", true)) {
+    try { initializeCharacterPilot(); } catch (e) { console.error(`${MODULE_ID} | character pilot registration failed`, e); }
+  }
+  if (game.user?.isGM && isFeatureEnabled("enableCriticalManager", true)) {
+    try { initializeCriticalManager(); } catch (e) { console.error(`${MODULE_ID} | critical manager registration failed`, e); }
+  }
+  try { registerNextCheckStatusCounterIntegration(); } catch (e) { console.error(`${MODULE_ID} | Status Counter integration registration failed`, e); }
+  try { registerNextCheckRollAutomation(); } catch (e) { console.error(`${MODULE_ID} | next-check roll automation registration failed`, e); }
+  try { initializeCombatCarousel(); } catch (e) { console.error(`${MODULE_ID} | combat carousel registration failed`, e); }
+  if (isFeatureEnabled("enableResultSpender", true)) {
+    try { registerPendingNextAllySlotAutomation(); } catch (e) { console.error(`${MODULE_ID} | pending next-ally slot automation registration failed`, e); }
+  }
 
   if (isFeatureEnabled("enableItemSend", true)) {
     try { registerItemTransferFeature(); } catch (e) { console.error(`${MODULE_ID} | item transfer registration failed`, e); }
@@ -136,6 +226,21 @@ Hooks.once("ready", async () => {
         if (payload.toUser && payload.toUser !== game.user.id) return;
         await showPlayerPopup(payload);
         return;
+      }
+
+      if (isFeatureEnabled("enableResultSpender", true)) {
+        const handled = await handleResultSpenderSocket(payload);
+        if (handled) return;
+      }
+
+      if (isFeatureEnabled("enableCharacterPilot", true)) {
+        const handledByPilot = await handleCharacterPilotSocket(payload);
+        if (handledByPilot) return;
+      }
+
+      if (isFeatureEnabled("enableWeaponAutomation", true)) {
+        const handledByWeaponAutomation = await handleWeaponAutomationSocket(payload);
+        if (handledByWeaponAutomation) return;
       }
 
       if (isFeatureEnabled("enableItemSend", true)) {
@@ -217,13 +322,20 @@ async function showPlayerPopup(payload) {
     </div>
   `;
 
-  new Dialog({
-    title: Lang.t("request.title"),
+  const DialogV2 = foundry.applications?.api?.DialogV2;
+  if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+  await DialogV2.wait({
+    window: { title: Lang.t("request.title"), icon: "fa-solid fa-dice" },
+    position: { width: 500, height: "auto" },
     content,
-    buttons: {
-      open: {
-        icon: '<i class="fas fa-dice"></i>',
+    modal: false,
+    rejectClose: false,
+    buttons: [
+      {
+        action: "open",
+        icon: "fa-solid fa-dice",
         label: Lang.t("popup.openDialog"),
+        default: true,
         callback: async () => {
           await openStarWarsFFGRollDialog({
             actor,
@@ -234,10 +346,9 @@ async function showPlayerPopup(payload) {
           });
         }
       },
-      close: { icon: '<i class="fas fa-times"></i>', label: Lang.t("common.close") }
-    },
-    default: "open"
-  }).render(true);
+      { action: "close", icon: "fa-solid fa-times", label: Lang.t("common.close") }
+    ]
+  });
 }
 
 function applyDifficultyAndUpgrades(difficulty, upgrades) {
@@ -302,11 +413,13 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
     threat: Number(skill?.threat ?? 0),
     success: Number(skill?.success ?? 0),
     triumph: Number(skill?.triumph ?? 0),
+    upgrades: Number(skill?.upgrades ?? 0),
     difficulty: finalPurple,
     challenge: finalRed
   });
 
   try { dicePool.upgrade(baseUpgrades + (dicePool.upgrades ?? 0)); } catch (e) {}
+  try { applyNextCheckDifficultyUpgradeToPool(actor, dicePool); } catch (e) { console.warn(`${MODULE_ID} | failed to apply requested next-check difficulty upgrade`, e); }
 
   const skillLabel = skill?.label ?? skillKey;
   const description = `${label ?? `Rolling ${skillLabel}`}`;
@@ -317,6 +430,8 @@ async function openStarWarsFFGRollDialog({ actor, skillKey, poolMods, rollMode, 
     if (sheet && typeof sheet.getData === "function") rollData = await sheet.getData();
   } catch (e) {}
   if (!rollData) rollData = { actor, data: { skills: skillsRoot, characteristics: charsRoot } };
+  rollData.document ??= actor;
+  rollData.actor ??= { _id: actor.id };
 
   const requestedMode = rollMode ?? "publicroll";
   let previousMode;
@@ -366,8 +481,3 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', () => { try { if (isFeatureEnabled("enableCurrency", true)) registerCurrencyUIHook(); } catch(e){ console.error(e);} });
 
-
-Hooks.once("init", () => {
-  try {
-    } catch (e) { console.error(MODULE_ID, e); }
-});

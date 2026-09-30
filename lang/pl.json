@@ -8,7 +8,8 @@
   "controls": {
     "requestRoll": "Poproś o rzut",
     "talentSearch": "Wyszukiwarka talentów",
-    "itemTransfer": "Przekazanie przedmiotu"
+    "itemTransfer": "Przekazanie przedmiotu",
+    "criticalManager": "Menedżer obrażeń krytycznych"
   },
   "request": {
     "title": "Prośba o rzut",
@@ -32,7 +33,15 @@
     "selectPlayersFirst": "(najpierw wybierz graczy)",
     "rollModePublic": "Publiczny",
     "selectedPlayerHasNoCharacter": "Wybrany gracz nie ma przypisanej postaci.",
-    "noSkillsFound": "Nie znaleziono umiejętności na tej postaci."
+    "noSkillsFound": "Nie znaleziono umiejętności na tej postaci.",
+    "refreshSkills": "Odśwież umiejętności",
+    "difficultyHint": "Kliknij 1–5 kości trudności. Kliknij ponownie wybraną wartość, aby wyczyścić do 0.",
+    "finalDifficulty": "Końcowa trudność",
+    "rollPreview": "Podgląd rzutu",
+    "rollPreviewHint": "Pula kości pokazana osobno dla każdej wybranej postaci.",
+    "previewSelectPlayer": "Wybierz gracza, aby zobaczyć pełny podgląd puli kości.",
+    "previewSelectSkill": "Wybierz umiejętność, aby zobaczyć podgląd rzutu.",
+    "noDifficulty": "Brak kości trudności"
   },
   "itemTransfer": {
     "contextLabel": "Wyślij do gracza",
@@ -193,6 +202,716 @@
     "enableTalentSearchName": "Włącz wyszukiwarkę talentów/spelli",
     "enableTalentSearchHint": "Odznaczone: narzędzie Wyszukiwarka talentów jest ukryte i nieaktywne.",
     "enableRequestRollsName": "Włącz żądanie rzutów",
-    "enableRequestRollsHint": "Odznaczone: narzędzie „Poproś o rzut” jest ukryte i nieaktywne."
+    "enableRequestRollsHint": "Odznaczone: narzędzie „Poproś o rzut” jest ukryte i nieaktywne.",
+    "enableResultSpenderName": "Włącz wydawanie wyników",
+    "enableResultSpenderHint": "Dodaje interaktywne wydawanie Advantage, Threat, Triumph i Despair z wyników rzutów FFG na czacie.",
+    "resultSpenderMenuName": "Opcje wydawania wyników",
+    "resultSpenderMenuLabel": "Konfiguruj wydawanie wyników",
+    "resultSpenderMenuHint": "Dodaj własne sposoby wydawania wyników kości narracyjnych i określ ich koszt.",
+    "enableCharacterPilotName": "Włącz Pilota postaci",
+    "enableCharacterPilotHint": "Pokazuje Pilota postaci w narzędziach sceny. Automatyzuje zasoby tury, typowe manewry, koszty Strain, efekty tymczasowe i szybkie narzędzia GM.",
+    "enableWeaponAutomationName": "Włącz automatyzację broni",
+    "enableWeaponAutomationHint": "Dodaje karty Apply Damage, automatyczne liczenie Soak/Pierce/Breach, pasywne modyfikatory kości z jakości broni oraz integrację aktywnych jakości z Wydawaniem wyników.",
+    "enableGMRollFudgingName": "Włącz fudgowanie rzutów przez GM",
+    "enableGMRollFudgingHint": "Dodaje tylko GM przycisk przy nieudanych atakach bronią. GM może wymusić trafienie, a rzut zostanie pokazany graczom jako udany.",
+    "enableCriticalManagerName": "Włącz Menedżer obrażeń krytycznych",
+    "enableCriticalManagerHint": "Pokazuje narzędzie GM do losowania i nakładania Critical Injuries na lewym pasku sceny.",
+    "additionalDefenseSkillsName": "Dodatkowe skille korzystające z Defense",
+    "additionalDefenseSkillsLabel": "Skonfiguruj skille Defense",
+    "additionalDefenseSkillsHint": "Wybierz dodatkowe skille, które mają automatycznie pobierać Melee Defense albo Ranged Defense z zaznaczonego celu i dodawać je jako kości Setback.",
+    "enableCombatCarouselName": "Włącz karuzelę walki",
+    "enableCombatCarouselHint": "Pokazuje u góry płótna karuzelę slotów inicjatywy Genesys. Wolne sloty graczy i NPC można claimować bezpośrednio z karuzeli."
+  },
+  "resultSpender": {
+    "contextLabel": "Wydaj wyniki",
+    "dialogTitle": "Wydaj wyniki",
+    "remaining": "Pozostało do wydania",
+    "spentSoFar": "Wydano do tej pory",
+    "spend": "Wydaj",
+    "availableNow": "dostępne: {count}",
+    "playerRestriction": "Gracz może wydawać tylko Advantage i Triumph ze swoich rzutów lub rzutów kontrolowanej przez siebie postaci. Threat i Despair może wydawać wyłącznie MG.",
+    "chatTitle": "Wydano wyniki rzutu",
+    "chatSpent": "{user} wydaje {cost} na: {option} (rzut: {roll}).",
+    "roll": "rzut",
+    "disabled": "Funkcja wydawania wyników jest wyłączona.",
+    "notSpendable": "Ta wiadomość nie zawiera wyników kości narracyjnych FFG, które można wydać.",
+    "noPermission": "Nie możesz wydawać wyników z tego rzutu.",
+    "gmOnlyNegative": "Threat i Despair może wydawać wyłącznie Mistrz Gry.",
+    "noGM": "Brak aktywnego Mistrza Gry, który może zatwierdzić wydanie wyników.",
+    "optionMissing": "Ta opcja wydawania już nie istnieje. Otwórz ponownie „Wydaj wyniki” i spróbuj jeszcze raz.",
+    "busy": "Ten rzut jest właśnie aktualizowany. Spróbuj ponownie za chwilę.",
+    "notEnough": "Za mało {symbol}. Koszt: {needed}; pozostało: {remaining}.",
+    "failed": "Nie udało się wydać wyniku. Szczegóły znajdziesz w konsoli.",
+    "noOptions": "Brak skonfigurowanych opcji wydawania dla dostępnych wyników.",
+    "settingsTitle": "Opcje wydawania wyników",
+    "settingsIntro": "Wbudowane opcje odpowiadają oficjalnym tabelom wydawania wyników dla spotkań społecznych i walki. Moduł automatycznie wybiera właściwy zestaw zależnie od tego, czy na aktywnej scenie trwa rozpoczęty Combat. Własne opcje GM są dostępne w obu trybach.",
+    "builtInTitle": "Opcje wbudowane",
+    "builtInHint": "Wbudowane opcje są dobierane automatycznie do kontekstu. Obsługiwane efekty Strain oraz modyfikatory następnego testu są stosowane automatycznie; pozostałe opcje zapisują wydatek i ogłaszają efekt na czacie.",
+    "customTitle": "Własne opcje wydawania",
+    "customHint": "Dodaj typ wyniku, koszt, nazwę i opcjonalny opis. Opcje wykorzystujące Threat lub Despair są automatycznie dostępne tylko dla MG.",
+    "addCustom": "Dodaj opcję",
+    "clearCustom": "Wyczyść własne opcje",
+    "save": "Zapisz opcje",
+    "delete": "Usuń opcję",
+    "noCustom": "Nie dodano jeszcze żadnych własnych opcji.",
+    "fieldName": "Nazwa",
+    "fieldResult": "Wynik",
+    "fieldCost": "Koszt",
+    "fieldDescription": "Opis (opcjonalnie)",
+    "nameRequired": "Każda własna opcja wydawania musi mieć nazwę.",
+    "invalidCost": "Koszt musi być liczbą całkowitą od 1 do 99.",
+    "invalidCustom": "Jedna z własnych opcji wydawania jest nieprawidłowa.",
+    "settingsSaved": "Zapisano opcje wydawania wyników.",
+    "symbols": {
+      "advantage": "Advantage",
+      "threat": "Threat",
+      "triumph": "Triumph",
+      "despair": "Despair"
+    },
+    "symbolShort": {
+      "advantage": "A",
+      "threat": "T",
+      "triumph": "Tr",
+      "despair": "D"
+    },
+    "builtins": {
+      "socialRecoverStrain": {
+        "title": "Odzyskaj 1 strain",
+        "description": "Aktywna postać odzyskuje 1 strain."
+      },
+      "socialNextAllyBoost": {
+        "title": "Boost dla następnego aktywnego sojusznika",
+        "description": "Dodaj kość Boost do następnego testu kolejnej aktywnej postaci będącej sojusznikiem."
+      },
+      "socialNoticeDetail": {
+        "title": "Zauważ ważny szczegół",
+        "description": "Zauważ pojedynczy istotny element trwającego spotkania, który może dać przewagę sytuacyjną."
+      },
+      "socialLearnStrengthFlaw": {
+        "title": "Poznaj Strength lub Flaw celu",
+        "description": "Poznaj Strength albo Flaw wskazanej postaci."
+      },
+      "socialTargetBoost": {
+        "title": "Setback do następnego testu celu",
+        "description": "Dodaj kość Setback do następnego testu wybranej postaci będącej celem/przeciwnikiem."
+      },
+      "socialAnyAllyBoost": {
+        "title": "Boost do następnego testu sojusznika",
+        "description": "Dodaj kość Boost do następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "socialLearnDesireFear": {
+        "title": "Poznaj Desire lub Fear celu",
+        "description": "Poznaj Desire albo Fear wskazanej postaci."
+      },
+      "socialConcealGoal": {
+        "title": "Ukryj swój prawdziwy cel",
+        "description": "Skutecznie ukryj swój prawdziwy cel w tym spotkaniu."
+      },
+      "socialLearnTrueGoal": {
+        "title": "Poznaj prawdziwy cel rozmówcy",
+        "description": "Poznaj prawdziwy cel wskazanej postaci, jeżeli taki posiada."
+      },
+      "socialLearnMotivation": {
+        "title": "Poznaj dowolny element Motivation",
+        "description": "Za zgodą GM poznaj dowolny element Motivation wybranej postaci w spotkaniu."
+      },
+      "socialUpgradeTargetDifficulty": {
+        "title": "Ulepsz trudność następnego testu celu",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu wskazanej postaci."
+      },
+      "socialUpgradeAllyAbility": {
+        "title": "Ulepsz następny test sojusznika",
+        "description": "Jednokrotnie ulepsz Ability następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "socialDoVital": {
+        "title": "Zrób coś kluczowego",
+        "description": "Uzyskaj znaczący efekt fabularny, np. skup uwagę wszystkich albo odciągnij strażników, aby sojusznicy mogli działać."
+      },
+      "socialSufferStrain": {
+        "title": "Aktywna postać otrzymuje strain",
+        "description": "Za każdy wydany Threat aktywna postać otrzymuje 1 strain. Jeśli efekt jest opłacany Despairem, otrzymuje 1 strain."
+      },
+      "socialDistracted": {
+        "title": "Rozproszenie lub zejście z tematu",
+        "description": "Aktywna postać zostaje chwilowo rozproszona; może np. stracić możliwość użycia zdolności wymagającej manewru w następnej turze albo utknąć w długiej rozmowie."
+      },
+      "socialRevealStrengthFlaw": {
+        "title": "Ujawnij własny Strength lub Flaw",
+        "description": "Aktywna postać przypadkowo ujawnia swój Strength albo Flaw."
+      },
+      "socialTargetGetsBoost": {
+        "title": "Boost dla celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "socialAllySetback": {
+        "title": "Setback do następnej akcji sojusznika",
+        "description": "Aktywna postać albo wybrany sojusznik otrzymuje kość Setback do swojej następnej akcji."
+      },
+      "socialRevealDesireFear": {
+        "title": "Ujawnij własny Desire lub Fear",
+        "description": "Aktywna postać przypadkowo ujawnia swój Desire albo Fear."
+      },
+      "socialRevealGoal": {
+        "title": "Ujawnij prawdziwy cel",
+        "description": "Aktywna postać przypadkowo ujawnia swój prawdziwy cel w spotkaniu."
+      },
+      "socialRevealAllyMotivation": {
+        "title": "Ujawnij Motivation sojusznika",
+        "description": "Aktywna postać przypadkowo ujawnia jeden element Motivation swojego sojusznika."
+      },
+      "socialFalseMotivation": {
+        "title": "Fałszywa Motivation celu",
+        "description": "Aktywna postać poznaje fałszywy element Motivation celu i uważa go za prawdziwy."
+      },
+      "socialUpgradeAllyDifficulty": {
+        "title": "Ulepsz trudność testu sojusznika",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu sojusznika albo następnego testu aktywnej postaci."
+      },
+      "socialLoseNextRound": {
+        "title": "Wciągnięcie w nieistotne wydarzenia",
+        "description": "Aktywna postać zostaje tak pochłonięta nieistotnymi wydarzeniami, że w następnej rundzie nie może zrobić niczego ważnego."
+      },
+      "combatRecoverStrain": {
+        "title": "Odzyskaj 1 strain",
+        "description": "Aktywna postać odzyskuje 1 strain."
+      },
+      "combatNextAllyBoost": {
+        "title": "Boost dla następnego sojusznika",
+        "description": "Dodaj kość Boost do następnego testu kolejnego sojusznika."
+      },
+      "combatNoticeDetail": {
+        "title": "Zauważ ważny szczegół",
+        "description": "Zauważ pojedynczy ważny element konfliktu, np. panel sterowania drzwiami albo słaby punkt pojazdu."
+      },
+      "combatCriticalInjury": {
+        "title": "Zadaj Critical Injury",
+        "description": "Przy udanym ataku, który zadał obrażenia po Soak, aktywuj Critical Injury. Wymagany koszt Advantage może zależeć od broni."
+      },
+      "combatItemQuality": {
+        "title": "Aktywuj Item Quality",
+        "description": "Aktywuj odpowiednią właściwość przedmiotu. Wymagany koszt Advantage może zależeć od danej właściwości."
+      },
+      "combatFreeManeuver": {
+        "title": "Natychmiastowy darmowy manewr",
+        "description": "Wykonaj natychmiast darmowy manewr, nie przekraczając limitu dwóch manewrów na turę."
+      },
+      "combatTargetBoost": {
+        "title": "Setback do następnego testu celu",
+        "description": "Dodaj kość Setback do następnego testu wybranej postaci będącej celem/przeciwnikiem."
+      },
+      "combatAnyAllyBoost": {
+        "title": "Boost do następnego testu sojusznika",
+        "description": "Dodaj kość Boost do następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "combatNegateDefense": {
+        "title": "Zaneguj Defense przeciwnika",
+        "description": "Zaneguj Defense wskazanego przeciwnika do końca bieżącej rundy, niezależnie czy pochodzi z osłony, ekwipunku czy Guarded Stance."
+      },
+      "combatIgnoreEnvironment": {
+        "title": "Zignoruj kary środowiskowe",
+        "description": "Ignoruj negatywne efekty środowiska do końca następnej tury aktywnej postaci."
+      },
+      "combatDisableTarget": {
+        "title": "Obezwładnij cel lub jego wyposażenie",
+        "description": "Przy zadawaniu obrażeń zamiast wounds/strain tymczasowo obezwładnij przeciwnika albo jeden element jego wyposażenia. Szczegóły ustala gracz z GM."
+      },
+      "combatGainDefense": {
+        "title": "Zyskaj +1 Defense",
+        "description": "Zyskaj +1 melee albo ranged Defense do końca następnej tury aktywnej postaci."
+      },
+      "combatDropWeapon": {
+        "title": "Zmuś cel do upuszczenia broni",
+        "description": "Zmuś wskazany cel do upuszczenia trzymanej broni melee albo ranged."
+      },
+      "combatUpgradeTargetDifficulty": {
+        "title": "Ulepsz trudność następnego testu celu",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu wskazanej postaci."
+      },
+      "combatUpgradeAllyAbility": {
+        "title": "Ulepsz następny test sojusznika",
+        "description": "Jednokrotnie ulepsz Ability następnego testu dowolnego sojusznika, także aktywnej postaci."
+      },
+      "combatDoVital": {
+        "title": "Zrób coś kluczowego",
+        "description": "Uzyskaj istotny efekt w walce, np. traf panel sterujący i zamknij pobliskie grodzie."
+      },
+      "combatInitiativeManeuver": {
+        "title": "Darmowy manewr przed rozpoczęciem walki",
+        "description": "Na teście Initiative wykonaj natychmiast darmowy manewr przed rozpoczęciem walki."
+      },
+      "combatDestroyEquipment": {
+        "title": "Zniszcz element wyposażenia celu",
+        "description": "Przy zadawaniu obrażeń zniszcz jeden używany przez cel element wyposażenia, np. broń."
+      },
+      "combatSufferStrain": {
+        "title": "Aktywna postać otrzymuje strain",
+        "description": "Za każdy wydany Threat aktywna postać otrzymuje 1 strain. Jeśli efekt jest opłacany Despairem, otrzymuje 1 strain."
+      },
+      "combatLoseManeuverBenefit": {
+        "title": "Utrata korzyści z wcześniejszego manewru",
+        "description": "Aktywna postać traci korzyść z wcześniejszego manewru, np. osłony lub Guarded Stance, dopóki nie wykona go ponownie."
+      },
+      "combatOpponentFreeManeuver": {
+        "title": "Przeciwnik wykonuje darmowy manewr",
+        "description": "Przeciwnik może natychmiast wykonać jeden darmowy manewr jako incidental w reakcji na test aktywnej postaci."
+      },
+      "combatTargetGetsBoost": {
+        "title": "Boost dla celu",
+        "description": "Dodaj kość Boost do następnego testu wskazanej postaci."
+      },
+      "combatAllySetback": {
+        "title": "Setback do następnej akcji",
+        "description": "Aktywna postać albo wybrany sojusznik otrzymuje kość Setback do swojej następnej akcji."
+      },
+      "combatFallProne": {
+        "title": "Aktywna postać przewraca się",
+        "description": "Aktywna postać upada i staje się prone."
+      },
+      "combatEnemyAdvantage": {
+        "title": "Daj przeciwnikowi znaczącą przewagę",
+        "description": "Aktywna postać daje przeciwnikowi istotną przewagę w walce, np. przypadkowo niszczy element otoczenia potrzebny do ucieczki."
+      },
+      "combatOutOfAmmo": {
+        "title": "Broń traci amunicję",
+        "description": "Broń aktywnej postaci natychmiast wyczerpuje amunicję i nie może być używana do końca spotkania."
+      },
+      "combatUpgradeAllyDifficulty": {
+        "title": "Ulepsz trudność testu sojusznika",
+        "description": "Jednokrotnie ulepsz Difficulty następnego testu sojusznika albo następnego testu aktywnej postaci."
+      },
+      "combatDamageWeaponTool": {
+        "title": "Uszkodź broń lub narzędzie",
+        "description": "Narzędzie albo używana przez aktywną postać broń Brawl/Melee zostaje uszkodzona."
+      }
+    },
+    "socialBuiltInTitle": "Spotkania społeczne — Social Encounters",
+    "combatBuiltInTitle": "Walka — Combat",
+    "encounterContext": "Kontekst",
+    "contexts": {
+      "social": "Spotkanie społeczne",
+      "combat": "Walka"
+    },
+    "decreaseCost": "Zmniejsz koszt",
+    "increaseCost": "Zwiększ koszt",
+    "invalidVariableCost": "Wybrano nieprawidłowy koszt wydania wyniku.",
+    "automation": {
+      "actorMissing": "Nie udało się ustalić aktywnej postaci dla tego rzutu. Strain nie został zmieniony.",
+      "strainUnavailable": "Postać {actor} nie posiada licznika Strain, więc tego efektu nie można zastosować automatycznie.",
+      "strainApplied": "Automatycznie zaktualizowano Strain postaci {actor}: {before} → {after}.",
+      "effectApplied": "Nałożono {effect} na {actor}. Łącznie na następny test: {count}.",
+      "effectNames": {
+        "boost": "Boost",
+        "setback": "Setback",
+        "upgradeAbility": "Upgrade Ability",
+        "upgradeDifficulty": "Upgrade Difficulty"
+      },
+      "nextAllyQueued": "Zakolejkowano {effect} dla następnego sojuszniczego slotu inicjatywy. Efekt zostanie nałożony, gdy ktoś przejmie ten slot.",
+      "nextAllyAppliedTitle": "Przejęto następny sojuszniczy slot",
+      "nextAllyApplied": "Nałożono {effect} na {actor}. Łącznie na następny test: {count}."
+    },
+    "targetLabel": "Cel efektu",
+    "noEligibleTarget": "Brak odpowiedniej postaci, na którą można nałożyć ten efekt.",
+    "targetRequired": "Wybierz postać, na którą ma zostać nałożony efekt.",
+    "targetInvalid": "Wybrana postać nie jest już prawidłowym celem dla tego efektu.",
+    "nextAllySlotWaiting": "Efekt zostanie nałożony automatycznie, gdy ktoś przejmie następny sojuszniczy slot inicjatywy.",
+    "noNextAllySlot": "Brak odpowiedniego następnego sojuszniczego slotu inicjatywy. Rozpocznij encounter i upewnij się, że sloty mają poprawne disposition.",
+    "currentTargetLabel": "Aktualny cel właściciela rzutu",
+    "noCurrentTarget": "Właściciel tego rzutu nie targetuje obecnie żadnego tokenu. Najpierw ustaw dokładnie jeden target.",
+    "multipleCurrentTargets": "Właściciel tego rzutu ma obecnie kilka targetów. Dla tego efektu pozostaw dokładnie jeden targetowany token.",
+    "targetChanged": "Aktualny target właściciela rzutu zmienił się. Otwórz ponownie Wydaj wyniki i spróbuj jeszcze raz.",
+    "nextAllySlotGeneric": "Następny sojuszniczy slot inicjatywy",
+    "activationLimitReached": "Tej jakości nie można aktywować z tego rzutu więcej niż {count} raz(y)."
+  },
+  "nextCheckEffects": {
+    "hudStackTooltip": "LPM: dodaj 1 poziom. PPM: usuń 1 poziom. Aktualnie: {count}."
+  },
+  "pilot": {
+    "title": "Pilot postaci",
+    "action": "Akcja",
+    "available": "Dostępna",
+    "used": "Zużyta",
+    "maneuvers": "Manewry",
+    "incidental": "Incidental",
+    "strain": "Strain",
+    "max": "maks.",
+    "yourTurn": "Twoja tura",
+    "notYourTurn": "To nie jest tura tej postaci",
+    "outsideCombat": "Poza walką",
+    "turnControls": "Sterowanie turą",
+    "maneuverActions": "Manewry",
+    "quickActions": "Szybkie akcje",
+    "currentTargets": "Aktualne cele",
+    "activeEffects": "Aktywne efekty",
+    "gmTargetTools": "GM — celowany token",
+    "gmConfig": "GM — konfiguracja postaci",
+    "maxManeuvers": "Maksymalna liczba manewrów na turę",
+    "maxManeuversHint": "Ustawienie tylko dla GM, zapisywane osobno dla tej postaci. Domyślnie: 2. Dodatkowe manewry można uzyskać za 2 Strain albo zamieniając niewykorzystaną Akcję, maksymalnie do tego limitu.",
+    "openSheet": "Otwórz kartę postaci",
+    "chooseCharacter": "Postać",
+    "choose": "Wybierz",
+    "save": "Zapisz",
+    "use": "Użyj",
+    "chooseWeapon": "Broń",
+    "chooseItem": "Przedmiot",
+    "drawn": "dobyta",
+    "holstered": "schowana",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "noEffects": "Brak aktywnych efektów.",
+    "noTarget": "Brak zaznaczonego celu.",
+    "actions": {
+      "markAction": "Oznacz Akcję jako zużytą",
+      "restoreAction": "Przywróć Akcję",
+      "extraManeuver": "Kup dodatkowy manewr (+{cost} Strain)",
+      "resetTurn": "Zresetuj liczniki tury",
+      "aim": "Aim / Celowanie",
+      "guardedStance": "Guarded Stance",
+      "guardedActive": "Guarded Stance aktywny",
+      "takeCover": "Take Cover / Osłona",
+      "leaveCover": "Opuść osłonę",
+      "standUp": "Wstań",
+      "assist": "Pomóż sojusznikowi",
+      "move": "Ruch / zmiana zasięgu",
+      "manageGear": "Dobycie / schowanie broni",
+      "useItem": "Użyj przedmiotu",
+      "endTurn": "Zakończ turę",
+      "sufferStrain": "Otrzymaj 1 Strain",
+      "healStrain": "Odzyskaj 1 Strain",
+      "addBoost": "Boost do następnego testu",
+      "addSetback": "Setback do następnego testu",
+      "upgradeAbility": "Upgrade Ability następnego testu",
+      "upgradeDifficulty": "Upgrade Difficulty następnego testu",
+      "actionToManeuver": "Zamień Akcję na manewr",
+      "clearAllEffects": "Usuń wszystkie efekty"
+    },
+    "effects": {
+      "boostNext": "Boost — następny test",
+      "setbackNext": "Setback — następny test",
+      "upgradeAbilityNext": "Upgrade Ability — następny test",
+      "upgradeDifficultyNext": "Upgrade Difficulty — następny test",
+      "guardedStance": "Guarded Stance",
+      "cover": "Osłona"
+    },
+    "statuses": {
+      "prone": "Prone / Powalony",
+      "staggered": "Staggered",
+      "disoriented": "Disoriented",
+      "immobilized": "Immobilized",
+      "invisible": "Niewidzialność",
+      "blinded": "Oślepienie"
+    },
+    "errors": {
+      "noActor": "Brak postaci dostępnej dla Pilota. Zaznacz własny token albo przypisz postać do użytkownika.",
+      "noStrain": "Ta postać nie ma toru Strain.",
+      "notYourTurn": "To nie jest aktywna tura tej postaci.",
+      "noManeuver": "Nie masz obecnie dostępnego manewru. Jeśli postać może wykonać kolejny, najpierw wykup go w Pilocie.",
+      "maxManeuvers": "Ta postać osiągnęła skonfigurowany limit {max} manewrów w tej turze.",
+      "guardedAlready": "Guarded Stance jest już aktywny.",
+      "noTarget": "Najpierw zaznacz dokładnie jeden token jako target.",
+      "oneTarget": "Te narzędzia GM wymagają dokładnie jednego targetowanego tokena.",
+      "noAllies": "Na aktywnej scenie nie znaleziono odpowiedniego sojusznika.",
+      "noWeapons": "Ta postać nie ma broni do dobycia lub schowania.",
+      "noUsableItems": "Nie znaleziono przedmiotów z ekwipunku do szybkiego użycia.",
+      "noCombat": "Nie ma aktywnej walki.",
+      "cannotEndTurn": "Nie można przejść do następnej tury.",
+      "generic": "Nie udało się wykonać akcji Pilota.",
+      "noActiveGM": "Brak aktywnego GM, który mógłby wykonać tę akcję na innej postaci.",
+      "actionAlreadyUsed": "Akcja została już wykorzystana albo zamieniona na manewr w tej turze.",
+      "convertedManeuverUsed": "Manewr uzyskany przez zamianę Akcji został już wykorzystany, więc nie można przywrócić Akcji w tej turze."
+    },
+    "warnings": {
+      "defensePath": "Nie znaleziono ścieżki danych aktora dla {type}. Efekt został utworzony, ale bonus do Defense nie mógł zostać zautomatyzowany.",
+      "statusMissing": "System nie udostępnia pasującego statusu: {status}."
+    },
+    "info": {
+      "extraManeuverBought": "Wykupiono dodatkowy manewr za {cost} Strain.",
+      "leftCover": "Zdjęto efekt osłony.",
+      "weaponDrawn": "Dobyto / przygotowano: {item}.",
+      "weaponHolstered": "Schowano: {item}.",
+      "maxManeuversSaved": "Maksymalna liczba manewrów tej postaci: {max}.",
+      "gmRequestSent": "Wysłano żądanie do GM.",
+      "endTurnRequested": "Wysłano do GM prośbę o zakończenie tury.",
+      "actionConverted": "Niewykorzystana Akcja została zamieniona na dodatkowy manewr w tej turze.",
+      "effectsCleared": "Usunięto {count} efektów z postaci {name}.",
+      "noEffectsToClear": "Postać {name} nie ma efektów do usunięcia."
+    },
+    "openFromToken": "Otwórz Pilota postaci",
+    "clearEffectsTitle": "Usunąć wszystkie efekty?",
+    "clearEffectsConfirm": "Czy na pewno usunąć wszystkie Active Effecty z postaci {name}? Zostanie usuniętych: {count}. Tej operacji nie można cofnąć.",
+    "cancel": "Anuluj"
+  },
+  "weaponAutomation": {
+    "weapon": "Broń",
+    "target": "cel",
+    "rollPanelTitle": "Jakości broni",
+    "useAutoFire": "Użyj Auto-Fire (+1 Difficulty)",
+    "publishDamage": "Pokaż obrażenia",
+    "damagePublished": "Obrażenia opublikowane",
+    "damageApplied": "Obrażenia nałożone",
+    "inlineDamageSummary": "Nałożono {damage} obrażeń na {actor}.",
+    "fudgeHit": "Wymuś trafienie",
+    "activateQuality": "Aktywuj {quality}",
+    "rollMods": {
+      "accurate": "+{count} Boost z Accurate",
+      "inaccurate": "+{count} Setback z Inaccurate",
+      "cumbersome": "+{count} Difficulty z Cumbersome (Brawn poniżej rangi)",
+      "superior": "+1 automatyczny Advantage z Superior",
+      "inferior": "+1 automatyczny Threat z Inferior"
+    },
+    "rollWarnings": {
+      "prepare": "Prepare {rank}: przed atakiem wymagane jest {rank} manewr(y) przygotowania.",
+      "slowFiring": "Slow-Firing {rank}: pamiętaj o wymaganej liczbie rund przerwy po strzale.",
+      "limitedAmmo": "Limited Ammo {rank}: pilnuj liczby pozostałych strzałów/przeładowania."
+    },
+    "qualities": {
+      "accurate": {
+        "name": "Accurate",
+        "description": "Dodaje kości Boost do testów wykonywanych tą bronią."
+      },
+      "autofire": {
+        "name": "Auto-Fire",
+        "description": "Pozwala wydać wyniki na dodatkowe trafienie. Włączenie Auto-Fire przed rzutem zwiększa Difficulty o 1."
+      },
+      "breach": {
+        "name": "Breach",
+        "description": "Ignoruje 1 punkt Armor pojazdu lub 10 punktów osobistego Soak za rangę, chyba że działa Cortosis."
+      },
+      "burn": {
+        "name": "Burn",
+        "description": "Nakłada Burn na liczbę rund równą randze."
+      },
+      "blast": {
+        "name": "Blast",
+        "description": "Zadaje obrażenia Blast postaciom Engaged z pierwotnym celem. Po chybieniu kosztuje 3 Advantage."
+      },
+      "concussive": {
+        "name": "Concussive",
+        "description": "Nakłada Staggered na liczbę rund równą randze."
+      },
+      "cortosis": {
+        "name": "Cortosis",
+        "description": "Chroni Soak/Armor przed redukcją z Pierce i Breach."
+      },
+      "cumbersome": {
+        "name": "Cumbersome",
+        "description": "Zwiększa Difficulty testów wykonywanych tą bronią o 1 za każdy punkt Brawn poniżej rangi."
+      },
+      "defensive": {
+        "name": "Defensive",
+        "description": "Zwiększa melee defense podczas dzierżenia broni."
+      },
+      "deflection": {
+        "name": "Deflection",
+        "description": "Zwiększa ranged defense podczas dzierżenia broni."
+      },
+      "disorient": {
+        "name": "Disorient",
+        "description": "Dodaje Setback do testów skilli celu przez liczbę rund równą randze."
+      },
+      "ensnare": {
+        "name": "Ensnare",
+        "description": "Nakłada Immobilized na liczbę rund równą randze."
+      },
+      "guided": {
+        "name": "Guided",
+        "description": "Po chybieniu wydaj 3 Advantage lub Triumph, aby pocisk kontynuował atak na pierwotny cel; kolejny test pozostaje kontekstowy."
+      },
+      "inaccurate": {
+        "name": "Inaccurate",
+        "description": "Dodaje Setbacki do testów wykonywanych tą bronią."
+      },
+      "inferior": {
+        "name": "Inferior",
+        "description": "Dodaje 1 automatyczny Threat do testów związanych z przedmiotem i zmniejsza bazowe obrażenia broni o 1."
+      },
+      "ion": {
+        "name": "Ion",
+        "description": "Obrażenia trafiają w Strain/System Strain, jeśli cel ma taki tor."
+      },
+      "limitedammo": {
+        "name": "Limited Ammo",
+        "description": "Broń ma ograniczoną liczbę strzałów przed przeładowaniem."
+      },
+      "linked": {
+        "name": "Linked",
+        "description": "Pozwala wydać wyniki na dodatkowe trafienia, maksymalnie do rangi Linked."
+      },
+      "knockdown": {
+        "name": "Knockdown",
+        "description": "Powala cel; koszt Advantage rośnie wraz z silhouette celu."
+      },
+      "pierce": {
+        "name": "Pierce",
+        "description": "Ignoruje osobisty Soak równy randze, chyba że działa Cortosis."
+      },
+      "prepare": {
+        "name": "Prepare",
+        "description": "Wymaga manewrów przygotowania przed użyciem."
+      },
+      "slowfiring": {
+        "name": "Slow-Firing",
+        "description": "Broń wymaga przerwy określonej liczbą rund po strzale."
+      },
+      "stun": {
+        "name": "Stun",
+        "description": "Po aktywacji nakłada Strain równy randze Stun."
+      },
+      "stundamage": {
+        "name": "Stun Damage",
+        "description": "Zwykłe obrażenia broni trafiają w Strain zamiast Wounds, nadal redukowane przez Soak."
+      },
+      "sunder": {
+        "name": "Sunder",
+        "description": "Uszkadza o jeden stopień jeden przedmiot używany przez cel; wybór przedmiotu pozostaje ręczny."
+      },
+      "superior": {
+        "name": "Superior",
+        "description": "Dodaje 1 automatyczny Advantage do testów związanych z przedmiotem i zwiększa bazowe obrażenia broni o 1."
+      },
+      "tractor": {
+        "name": "Tractor",
+        "description": "Po trafieniu pojazdu oznacza cel efektem Tractor o odpowiedniej randze."
+      },
+      "vicious": {
+        "name": "Vicious",
+        "description": "Dodaje +10 za rangę do rzutu na Critical Injury/Critical Hit."
+      }
+    },
+    "automation": {
+      "autofire": "Przygotowano dodatkowe trafienie Auto-Fire.",
+      "linked": "Przygotowano dodatkowe trafienie Linked.",
+      "extraHitReady": "{quality}: utworzono kartę dodatkowego trafienia ({damage} obrażeń).",
+      "blast": "Blast obejmuje postacie Engaged z celem {target}.",
+      "blastReady": "Utworzono kartę Blast na {damage} obrażeń przed Soak.",
+      "burn": "{actor} otrzymuje Burn na {rounds} rund(y); efekt okresowy wykorzystuje bazowe obrażenia {damage}.",
+      "concussive": "{actor} otrzymuje Staggered na {rounds} rund(y).",
+      "disorient": "{actor} otrzymuje Disoriented na {rounds} rund(y).",
+      "ensnare": "{actor} otrzymuje Immobilized na {rounds} rund(y).",
+      "knockdown": "{actor} zostaje powalony (Prone).",
+      "stun": "{actor} otrzymuje {strain} Strain.",
+      "guided": "Aktywowano Guided {rank} przeciwko {actor}; rozpatrz kolejny test Guided w odpowiednim momencie.",
+      "sunder": "Aktywowano Sunder przeciwko {actor}; uszkodź odpowiedni przedmiot celu o jeden stopień.",
+      "announced": "Aktywowano {quality}."
+    },
+    "damageTypes": {
+      "wounds": "Wounds",
+      "strain": "Strain",
+      "hullTrauma": "Hull Trauma",
+      "systemStrain": "System Strain"
+    },
+    "damageCard": {
+      "title": "Obrażenia broni",
+      "extraHitTitle": "{quality} — dodatkowe trafienie",
+      "blastTitle": "Blast {rank}",
+      "breakdown": "Baza {base} + {successes} Success = {total} obrażeń",
+      "flatDamage": "{total} obrażeń",
+      "apply": "Nałóż obrażenia",
+      "appliedNotice": "Nałożono {damage} obrażeń na {actor}.",
+      "appliedTitle": "Nałożono obrażenia",
+      "appliedLine": "{damage} {type}",
+      "reduction": "Soak/Armor {soak}, zignorowane {ignored}, efektywne {effective}",
+      "cortosisBlocked": "Cortosis uniemożliwia Pierce/Breach zmniejszenie Soak/Armor.",
+      "calculation": "Surowe obrażenia {raw}; {reduction}",
+      "trackChange": "Tor: {before} → {after}"
+    },
+    "errors": {
+      "generic": "Automatyzacja broni nie powiodła się.",
+      "disabled": "Automatyzacja broni jest wyłączona.",
+      "notWeaponRoll": "To nie jest rzut bronią.",
+      "notSuccessfulWeaponRoll": "Obrażenia można opublikować tylko po udanym ataku bronią.",
+      "sourceMessageMissing": "Wiadomość źródłowego rzutu już nie istnieje.",
+      "damageCardMissing": "Brakuje danych karty obrażeń.",
+      "selectOneToken": "Zaznacz dokładnie jeden własny token przed nałożeniem obrażeń.",
+      "noDamageTarget": "Brak poprawnej własnej postaci/tokenu do nałożenia obrażeń.",
+      "noGM": "Brak aktywnego GM-a.",
+      "notOwner": "Nie jesteś właścicielem wybranego celu obrażeń.",
+      "alreadyApplied": "Ta karta obrażeń została już zastosowana do tej postaci.",
+      "noDamageTrack": "Cel nie ma obsługiwanego toru Wounds/Hull Trauma.",
+      "targetMissing": "Ta jakość broni wymaga dokładnie jednego targetu.",
+      "noStrainTrack": "Cel nie ma toru Strain."
+    },
+    "criticalViciousHint": "Vicious dodaje +{modifier} do rzutu na Critical Injury/Critical Hit.",
+    "fudgeSuccesses": "Sukcesy"
+  },
+  "criticalManager": {
+    "title": "Menedżer Critical Injuries",
+    "target": "Postać docelowa",
+    "criticalType": "Rodzaj kryta",
+    "modifier": "Modyfikator rzutu krytycznego",
+    "manualModifier": "Dodatkowy modyfikator",
+    "existingCriticals": "Istniejące Critical Injuries",
+    "totalModifier": "Łączny modyfikator",
+    "noExistingCriticals": "Postać nie ma obecnie Critical Injuries.",
+    "selectedTokenHint": "Cel jest pobierany z aktualnie zaznaczonego tokena. Jeśli zaznaczono kilka tokenów, wybierz jeden powyżej.",
+    "playerListHint": "Nie zaznaczono tokena — wybierz postać gracza z listy.",
+    "noTargets": "Nie zaznaczono tokena i nie znaleziono żadnej postaci gracza.",
+    "entriesLoaded": "wyników krytycznych wczytanych",
+    "coverage": "Zakres D100",
+    "invalidEntries": "Pominięto {count} wpis(y), ponieważ nie mają poprawnego system.min/system.max.",
+    "noFolders": "Nie znaleziono folderu Itemów z Critical Injuries. Najpierw zaimportuj Critical Injuries na stałe do folderu w świecie.",
+    "rollCritical": "Rzuć na Critical Injury",
+    "lastResult": "Ostatni Critical Injury",
+    "severity": "Poziom",
+    "addedToActor": "Dodano do karty: {actor}.",
+    "chatTitle": "Critical Injury",
+    "unknownTable": "Nieznana tabela",
+    "rollBreakdown": "D100 {roll} {manual} ręczny {existing} istniejące = {total}",
+    "existingCountChat": "Liczba istniejących Critical Injuries przed tym rzutem: {count}.",
+    "notifications": {
+      "applied": "{injury} został dodany do karty postaci {actor}."
+    },
+    "errors": {
+      "generic": "Wystąpił błąd Menedżera Critical Injuries. Szczegóły są w konsoli.",
+      "gmOnly": "Tylko GM może używać Menedżera Critical Injuries.",
+      "noTarget": "Najpierw wybierz postać docelową.",
+      "noFolder": "Wybierz folder źródłowy Critical Injuries.",
+      "noValidEntries": "Wybrany folder nie zawiera Critical Injuries z poprawnymi zakresami D100 min/max.",
+      "noMatchingRange": "Żaden Critical Injury w tym folderze nie obejmuje wyniku {total}.",
+      "applyFailed": "Nie udało się dodać Critical Injury do karty postaci."
+    }
+  },
+  "defenseSkills": {
+    "title": "Dodatkowe skille Defense",
+    "intro": "Przypisz dodatkowe skille do Melee Defense albo Ranged Defense. Gdy wykonujesz test takiego skilla i masz zaznaczony token jako cel, jego Defense zostanie automatycznie dodane do puli jako kości Setback.",
+    "systemNote": "Standardowe skille bojowe obsługiwane natywnie przez StarWarsFFG są oznaczone poniżej i nie można ich przypisać ponownie — zapobiega to podwójnemu doliczaniu Defense.",
+    "skillHeader": "Skill",
+    "noneHeader": "Brak",
+    "meleeHeader": "Melee Defense",
+    "rangedHeader": "Ranged Defense",
+    "nativeHeader": "Obsługa systemowa",
+    "searchPlaceholder": "Szukaj skilla po nazwie lub ID…",
+    "noSkills": "Nie znaleziono żadnych skilli w aktywnym zestawie ani na postaciach w świecie.",
+    "save": "Zapisz ustawienia",
+    "saved": "Zapisano konfigurację dodatkowych skilli Defense.",
+    "nativeMelee": "Natywnie: Melee Defense",
+    "nativeRanged": "Natywnie: Ranged Defense",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "rollApplied": "{skill}: +{count} Setback z {defense} celu."
+  },
+  "combatCarousel": {
+    "pcSlot": "Slot gracza",
+    "npcSlot": "Slot NPC",
+    "neutralSlot": "Slot neutralny",
+    "freeSlot": "Wolny slot",
+    "free": "Wolny",
+    "claim": "Claim",
+    "current": "Aktualny",
+    "previous": "Poprzedni slot",
+    "next": "Następny slot",
+    "round": "Runda {round}",
+    "hiddenNpc": "Ukryty NPC",
+    "hiddenCombatant": "Ukryta postać",
+    "selectOneToken": "Zaznacz dokładnie jeden token, który ma zclaimować ten slot inicjatywy.",
+    "notInCombat": "Zaznaczony token nie bierze udziału w tej walce.",
+    "defeated": "Pokonany uczestnik nie może claimować slotu inicjatywy.",
+    "alreadyHasSlot": "Ta postać zclaimowała już slot w tej rundzie.",
+    "alreadyClaimed": "Ten slot inicjatywy jest już zajęty.",
+    "wrongSlotType": "Zaznaczony token nie może zclaimować tego rodzaju slotu.",
+    "gmOnlyNpc": "Tylko GM może claimować sloty NPC.",
+    "claimFailed": "Nie udało się zclaimować slotu inicjatywy.",
+    "unused": "Niewykorzystany",
+    "onlyCurrent": "Można claimować tylko aktualny slot inicjatywy.",
+    "unusedSlot": "Ten slot inicjatywy jest obecnie niewykorzystany i nie można go zclaimować."
   }
 }

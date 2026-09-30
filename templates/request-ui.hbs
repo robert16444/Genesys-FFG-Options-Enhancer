@@ -28,32 +28,76 @@
     <input type="hidden" name="skillLabel" value="" />
     <div class="grr-row grr-row-top">
       <div class="grr-skill-list" data-skill-list>
-        <div class="grr-muted">{{grr_localize 'request.selectPlayersFirst'}}</div>
+        {{#each initialSkills}}
+          <button type="button" class="grr-skill-option" data-skill-key="{{key}}" data-skill-label="{{label}}">{{label}}</button>
+        {{/each}}
+        {{#unless initialSkills.length}}
+          <div class="grr-muted">{{grr_localize 'request.noSkillsFound'}}</div>
+        {{/unless}}
       </div>
-      <button type="button" name="refreshSkills" class="grr-btn" title="Odśwież listę umiejętności">↻</button>
+      <button type="button" name="refreshSkills" class="grr-btn" title="{{grr_localize 'request.refreshSkills'}}">↻</button>
     </div>
     <p class="grr-muted">{{grr_localize 'request.skillHint'}}</p>
   </div>
 
-  <div class="grr-grid4">
-    <div class="grr-field">
-      <label>{{grr_localize 'request.difficulty'}} (purple)</label>
-      <input type="number" name="difficulty" value="0" min="0" step="1" />
+  <section class="grr-dice-builder">
+    <div class="grr-field grr-difficulty-field">
+      <label>{{grr_localize 'request.difficulty'}}</label>
+      <input type="hidden" name="difficulty" value="0" />
+      <div class="grr-difficulty-selector" title="{{grr_localize 'request.difficultyHint'}}">
+        <button type="button" class="grr-difficulty-die" data-value="1" aria-label="1"><span class="grr-die grr-die-difficulty"></span></button>
+        <button type="button" class="grr-difficulty-die" data-value="2" aria-label="2"><span class="grr-die grr-die-difficulty"></span></button>
+        <button type="button" class="grr-difficulty-die" data-value="3" aria-label="3"><span class="grr-die grr-die-difficulty"></span></button>
+        <button type="button" class="grr-difficulty-die" data-value="4" aria-label="4"><span class="grr-die grr-die-difficulty"></span></button>
+        <button type="button" class="grr-difficulty-die" data-value="5" aria-label="5"><span class="grr-die grr-die-difficulty"></span></button>
+      </div>
     </div>
-    <div class="grr-field">
-      <label>{{grr_localize 'request.challengeUpgrades'}}</label>
-      <input type="number" name="challenge" value="0" min="0" step="1" />
-      <p class="grr-muted">{{grr_localize 'request.challengeHelp'}}</p>
+
+    <div class="grr-modifier-grid">
+      <div class="grr-field grr-stepper-field">
+        <label>{{grr_localize 'request.challengeUpgrades'}}</label>
+        <input type="hidden" name="challenge" value="0" />
+        <div class="grr-stepper">
+          <button type="button" class="grr-stepper-btn" data-input="challenge" data-delta="-1">−</button>
+          <output data-stepper-value="challenge">0</output>
+          <button type="button" class="grr-stepper-btn" data-input="challenge" data-delta="1">+</button>
+        </div>
+      </div>
+
+      <div class="grr-field grr-stepper-field">
+        <label>{{grr_localize 'request.boost'}}</label>
+        <input type="hidden" name="boost" value="0" />
+        <div class="grr-stepper">
+          <button type="button" class="grr-stepper-btn" data-input="boost" data-delta="-1">−</button>
+          <output data-stepper-value="boost">0</output>
+          <button type="button" class="grr-stepper-btn" data-input="boost" data-delta="1">+</button>
+        </div>
+      </div>
+
+      <div class="grr-field grr-stepper-field">
+        <label>{{grr_localize 'request.setback'}}</label>
+        <input type="hidden" name="setback" value="0" />
+        <div class="grr-stepper">
+          <button type="button" class="grr-stepper-btn" data-input="setback" data-delta="-1">−</button>
+          <output data-stepper-value="setback">0</output>
+          <button type="button" class="grr-stepper-btn" data-input="setback" data-delta="1">+</button>
+        </div>
+      </div>
     </div>
-    <div class="grr-field">
-      <label>{{grr_localize 'request.setback'}}</label>
-      <input type="number" name="setback" value="0" min="0" step="1" />
+
+    <div class="grr-final-difficulty-block">
+      <span class="grr-small-label">{{grr_localize 'request.finalDifficulty'}}</span>
+      <div class="grr-final-difficulty" data-final-difficulty></div>
     </div>
-    <div class="grr-field">
-      <label>{{grr_localize 'request.boost'}}</label>
-      <input type="number" name="boost" value="0" min="0" step="1" />
+  </section>
+
+  <section class="grr-roll-preview-block">
+    <div class="grr-preview-header">
+      <label>{{grr_localize 'request.rollPreview'}}</label>
+      <span class="grr-muted">{{grr_localize 'request.rollPreviewHint'}}</span>
     </div>
-  </div>
+    <div class="grr-roll-preview" data-roll-preview></div>
+  </section>
 
   <div class="grr-field">
     <label>{{grr_localize 'request.rollMode'}}</label>

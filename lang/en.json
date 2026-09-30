@@ -9,7 +9,8 @@
   "controls": {
     "requestRoll": "Request a Roll",
     "talentSearch": "Talent Search",
-    "itemTransfer": "Item Transfer"
+    "itemTransfer": "Item Transfer",
+    "criticalManager": "Critical Injury Manager"
   },
   "request": {
     "title": "Request a Roll",
@@ -33,7 +34,15 @@
     "selectPlayersFirst": "(select player(s) first)",
     "rollModePublic": "Public",
     "selectedPlayerHasNoCharacter": "The selected player has no character assigned.",
-    "noSkillFound": "No skill found on this character."
+    "refreshSkills": "Refresh skills",
+    "difficultyHint": "Click 1–5 Difficulty dice. Click the selected value again to clear to 0.",
+    "finalDifficulty": "Final difficulty",
+    "rollPreview": "Roll preview",
+    "rollPreviewHint": "The dice pool shown for each selected character.",
+    "previewSelectPlayer": "Select a player to preview the complete dice pool.",
+    "previewSelectSkill": "Select a skill to preview the roll.",
+    "noDifficulty": "No difficulty dice",
+    "noSkillsFound": "No skills found on this character."
   },
   "itemTransfer": {
     "contextLabel": "Send to player",
@@ -194,6 +203,716 @@
     "enableTalentSearchName": "Enable talent/spell search",
     "enableTalentSearchHint": "If unchecked, the Talent Search tool is hidden and inactive.",
     "enableRequestRollsName": "Enable roll requests",
-    "enableRequestRollsHint": "If unchecked, the Request a Roll tool is hidden and inactive."
+    "enableRequestRollsHint": "If unchecked, the Request a Roll tool is hidden and inactive.",
+    "enableResultSpenderName": "Enable Spend Results",
+    "enableResultSpenderHint": "Adds interactive spending of Advantage, Threat, Triumph, and Despair to FFG roll chat messages.",
+    "resultSpenderMenuName": "Spend Results options",
+    "resultSpenderMenuLabel": "Configure Spend Results",
+    "resultSpenderMenuHint": "Add campaign-specific ways to spend narrative dice results and define their costs.",
+    "enableCharacterPilotName": "Enable Character Pilot",
+    "enableCharacterPilotHint": "Shows the Character Pilot in Scene Controls. It automates turn resources, common maneuvers, strain costs, temporary effects and GM target tools.",
+    "enableWeaponAutomationName": "Enable weapon automation",
+    "enableWeaponAutomationHint": "Adds Apply Damage cards, automatic soak/Pierce/Breach handling, passive weapon-quality dice modifiers and Spend Results integration for active weapon qualities.",
+    "enableGMRollFudgingName": "Enable GM roll fudging",
+    "enableGMRollFudgingHint": "Adds a GM-only button to failed weapon attacks. The GM can force the attack to count and display as a successful hit.",
+    "enableCriticalManagerName": "Enable Critical Injury Manager",
+    "enableCriticalManagerHint": "Show the GM Critical Injury Manager in Scene Controls.",
+    "additionalDefenseSkillsName": "Additional skills using Defense",
+    "additionalDefenseSkillsLabel": "Configure Defense skills",
+    "additionalDefenseSkillsHint": "Choose additional skills that should automatically read Melee Defense or Ranged Defense from the targeted token and add it as Setback dice.",
+    "enableCombatCarouselName": "Enable combat carousel",
+    "enableCombatCarouselHint": "Shows a Genesys initiative-slot carousel at the top of the canvas. Free PC/NPC slots can be claimed directly from the carousel."
+  },
+  "resultSpender": {
+    "contextLabel": "Spend Results",
+    "dialogTitle": "Spend Results",
+    "remaining": "Results remaining to spend",
+    "spentSoFar": "Spent so far",
+    "spend": "Spend",
+    "availableNow": "available: {count}",
+    "playerRestriction": "Players can spend only Advantage and Triumph from their own/controlled rolls. Threat and Despair can be spent only by a GM.",
+    "chatTitle": "Results spent",
+    "chatSpent": "{user} spent {cost} on {option} from {roll}.",
+    "roll": "roll",
+    "disabled": "Spend Results is disabled.",
+    "notSpendable": "This chat message does not contain spendable FFG narrative dice results.",
+    "noPermission": "You cannot spend results from this roll.",
+    "gmOnlyNegative": "Only a GM can spend Threat or Despair.",
+    "noGM": "No active GM is available to authorize result spending.",
+    "optionMissing": "This spending option no longer exists. Reopen Spend Results and try again.",
+    "busy": "This roll is being updated. Try again in a moment.",
+    "notEnough": "Not enough {symbol}. Cost: {needed}; remaining: {remaining}.",
+    "failed": "Could not spend the result. See the console for details.",
+    "noOptions": "No spending options are configured for the available results.",
+    "settingsTitle": "Spend Results Options",
+    "settingsIntro": "Built-in options follow the standard result-spending tables for social encounters and combat. The module automatically selects the correct set depending on whether a started Combat is active on the current scene. GM custom options remain available in both modes.",
+    "builtInTitle": "Built-in options",
+    "builtInHint": "Built-in options are selected automatically for the current context. Supported Strain effects and next-check modifiers are applied automatically; other options track the spend and announce the chosen effect in chat.",
+    "customTitle": "Custom spending options",
+    "customHint": "Add your own result, cost, name, and optional description. Threat and Despair options are automatically GM-only.",
+    "addCustom": "Add option",
+    "clearCustom": "Clear custom options",
+    "save": "Save options",
+    "delete": "Delete option",
+    "noCustom": "No custom spending options yet.",
+    "fieldName": "Name",
+    "fieldResult": "Result",
+    "fieldCost": "Cost",
+    "fieldDescription": "Description (optional)",
+    "nameRequired": "Every custom spending option needs a name.",
+    "invalidCost": "Cost must be a whole number from 1 to 99.",
+    "invalidCustom": "One of the custom spending options is invalid.",
+    "settingsSaved": "Spend Results options saved.",
+    "symbols": {
+      "advantage": "Advantage",
+      "threat": "Threat",
+      "triumph": "Triumph",
+      "despair": "Despair"
+    },
+    "symbolShort": {
+      "advantage": "A",
+      "threat": "T",
+      "triumph": "Tr",
+      "despair": "D"
+    },
+    "builtins": {
+      "socialRecoverStrain": {
+        "title": "Recover 1 strain",
+        "description": "The active character recovers 1 strain."
+      },
+      "socialNextAllyBoost": {
+        "title": "Boost the next active ally",
+        "description": "Add a Boost die to the next check made by the next allied active character."
+      },
+      "socialNoticeDetail": {
+        "title": "Notice an important detail",
+        "description": "Notice one important detail in the ongoing encounter that can provide a situational advantage."
+      },
+      "socialLearnStrengthFlaw": {
+        "title": "Learn the target's Strength or Flaw",
+        "description": "Learn either the Strength or the Flaw of the targeted character."
+      },
+      "socialTargetBoost": {
+        "title": "Setback on the target's next check",
+        "description": "Add a Setback die to the selected target/opponent's next check."
+      },
+      "socialAnyAllyBoost": {
+        "title": "Boost any ally's next check",
+        "description": "Add a Boost die to any allied character's next check, including the active character."
+      },
+      "socialLearnDesireFear": {
+        "title": "Learn the target's Desire or Fear",
+        "description": "Learn either the Desire or the Fear of the targeted character."
+      },
+      "socialConcealGoal": {
+        "title": "Conceal your true goal",
+        "description": "Successfully conceal your true goal during the encounter."
+      },
+      "socialLearnTrueGoal": {
+        "title": "Learn the target's true goal",
+        "description": "Learn the target's true goal, if they have one."
+      },
+      "socialLearnMotivation": {
+        "title": "Learn any Motivation facet",
+        "description": "With GM approval, learn any one Motivation facet of a character in the encounter."
+      },
+      "socialUpgradeTargetDifficulty": {
+        "title": "Upgrade the target's next difficulty",
+        "description": "Upgrade the difficulty of the targeted character's next check once."
+      },
+      "socialUpgradeAllyAbility": {
+        "title": "Upgrade an ally's next check",
+        "description": "Upgrade the ability of any allied character's next check once, including the active character."
+      },
+      "socialDoVital": {
+        "title": "Do something vital",
+        "description": "Create a major narrative opening, such as getting everyone's attention or distracting guards so allies can act."
+      },
+      "socialSufferStrain": {
+        "title": "Active character suffers strain",
+        "description": "The active character suffers 1 strain for each Threat spent. If the effect is paid with Despair, the character suffers 1 strain."
+      },
+      "socialDistracted": {
+        "title": "Become distracted or sidetracked",
+        "description": "The active character is briefly distracted; this might block an ability requiring a maneuver on their next turn or drag them into an unwanted conversation."
+      },
+      "socialRevealStrengthFlaw": {
+        "title": "Reveal your own Strength or Flaw",
+        "description": "The active character accidentally reveals their own Strength or Flaw."
+      },
+      "socialTargetGetsBoost": {
+        "title": "Give the target a Boost",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "socialAllySetback": {
+        "title": "Setback on an ally's next action",
+        "description": "The active character or an allied character suffers a Setback die on their next action."
+      },
+      "socialRevealDesireFear": {
+        "title": "Reveal your own Desire or Fear",
+        "description": "The active character accidentally reveals their own Desire or Fear."
+      },
+      "socialRevealGoal": {
+        "title": "Reveal your true goal",
+        "description": "The active character accidentally reveals their true goal in the encounter."
+      },
+      "socialRevealAllyMotivation": {
+        "title": "Reveal an ally's Motivation",
+        "description": "The active character accidentally reveals one Motivation facet of an ally."
+      },
+      "socialFalseMotivation": {
+        "title": "Learn a false Motivation",
+        "description": "The active character learns a false Motivation facet of the target and believes it to be true."
+      },
+      "socialUpgradeAllyDifficulty": {
+        "title": "Upgrade an ally's next difficulty",
+        "description": "Upgrade the difficulty of an allied character's next check or the active character's next check once."
+      },
+      "socialLoseNextRound": {
+        "title": "Get embroiled in irrelevant events",
+        "description": "The active character becomes so caught up in irrelevant events that they cannot do anything important during the next round."
+      },
+      "combatRecoverStrain": {
+        "title": "Recover 1 strain",
+        "description": "The active character recovers 1 strain."
+      },
+      "combatNextAllyBoost": {
+        "title": "Boost the next ally",
+        "description": "Add a Boost die to the next allied character's next check."
+      },
+      "combatNoticeDetail": {
+        "title": "Notice an important detail",
+        "description": "Notice one important point in the conflict, such as a door control panel or a weak point on an armored vehicle."
+      },
+      "combatCriticalInjury": {
+        "title": "Inflict a Critical Injury",
+        "description": "On a successful attack that deals damage past soak, trigger a Critical Injury. The required Advantage cost can vary by weapon."
+      },
+      "combatItemQuality": {
+        "title": "Activate an Item Quality",
+        "description": "Activate a relevant item quality. The required Advantage cost can vary by quality."
+      },
+      "combatFreeManeuver": {
+        "title": "Immediate free maneuver",
+        "description": "Immediately perform a free maneuver without exceeding the limit of two maneuvers per turn."
+      },
+      "combatTargetBoost": {
+        "title": "Setback on the target's next check",
+        "description": "Add a Setback die to the selected target/opponent's next check."
+      },
+      "combatAnyAllyBoost": {
+        "title": "Boost any ally's next check",
+        "description": "Add a Boost die to any allied character's next check, including the active character."
+      },
+      "combatNegateDefense": {
+        "title": "Negate an enemy's Defense",
+        "description": "Negate the targeted enemy's Defense until the end of the current round, whether it comes from cover, equipment, or a guarded stance."
+      },
+      "combatIgnoreEnvironment": {
+        "title": "Ignore environmental penalties",
+        "description": "Ignore penalizing environmental effects until the end of the active character's next turn."
+      },
+      "combatDisableTarget": {
+        "title": "Disable the target or a piece of gear",
+        "description": "When dealing damage, disable the opponent or one piece of their gear instead of dealing wounds or strain. The player and GM should agree on the exact effect."
+      },
+      "combatGainDefense": {
+        "title": "Gain +1 Defense",
+        "description": "Gain +1 melee or ranged Defense until the end of the active character's next turn."
+      },
+      "combatDropWeapon": {
+        "title": "Force the target to drop a weapon",
+        "description": "Force the targeted character to drop one melee or ranged weapon they are wielding."
+      },
+      "combatUpgradeTargetDifficulty": {
+        "title": "Upgrade the target's next difficulty",
+        "description": "Upgrade the difficulty of the targeted character's next check once."
+      },
+      "combatUpgradeAllyAbility": {
+        "title": "Upgrade an ally's next check",
+        "description": "Upgrade the ability of any allied character's next check once, including the active character."
+      },
+      "combatDoVital": {
+        "title": "Do something vital",
+        "description": "Create a major combat effect, such as shooting nearby blast-door controls to seal them shut."
+      },
+      "combatInitiativeManeuver": {
+        "title": "Free maneuver before combat begins",
+        "description": "On an Initiative check, immediately perform a free maneuver before combat begins."
+      },
+      "combatDestroyEquipment": {
+        "title": "Destroy a piece of the target's equipment",
+        "description": "When dealing damage, destroy one piece of equipment the target is using, such as a weapon."
+      },
+      "combatSufferStrain": {
+        "title": "Active character suffers strain",
+        "description": "The active character suffers 1 strain for each Threat spent. If the effect is paid with Despair, the character suffers 1 strain."
+      },
+      "combatLoseManeuverBenefit": {
+        "title": "Lose the benefit of a prior maneuver",
+        "description": "The active character loses the benefit of a prior maneuver, such as cover or a guarded stance, until they perform it again."
+      },
+      "combatOpponentFreeManeuver": {
+        "title": "Opponent performs a free maneuver",
+        "description": "An opponent may immediately perform one free maneuver as an incidental response to the active character's check."
+      },
+      "combatTargetGetsBoost": {
+        "title": "Give the target a Boost",
+        "description": "Add a Boost die to the targeted character's next check."
+      },
+      "combatAllySetback": {
+        "title": "Setback on the next action",
+        "description": "The active character or an allied character suffers a Setback die on their next action."
+      },
+      "combatFallProne": {
+        "title": "Active character falls prone",
+        "description": "The active character falls prone."
+      },
+      "combatEnemyAdvantage": {
+        "title": "Grant the enemy a significant advantage",
+        "description": "The active character gives an enemy a significant advantage in the encounter, such as damaging an environmental feature needed for escape."
+      },
+      "combatOutOfAmmo": {
+        "title": "Weapon runs out of ammunition",
+        "description": "The active character's weapon immediately runs out of ammunition and cannot be used for the rest of the encounter."
+      },
+      "combatUpgradeAllyDifficulty": {
+        "title": "Upgrade an ally's next difficulty",
+        "description": "Upgrade the difficulty of an allied character's next check or the active character's next check once."
+      },
+      "combatDamageWeaponTool": {
+        "title": "Damage a weapon or tool",
+        "description": "A tool, Brawl weapon, or Melee weapon used by the active character becomes damaged."
+      }
+    },
+    "socialBuiltInTitle": "Social Encounters",
+    "combatBuiltInTitle": "Combat",
+    "encounterContext": "Context",
+    "contexts": {
+      "social": "Social encounter",
+      "combat": "Combat"
+    },
+    "decreaseCost": "Decrease cost",
+    "increaseCost": "Increase cost",
+    "invalidVariableCost": "An invalid result-spending cost was selected.",
+    "automation": {
+      "actorMissing": "Could not determine the active character for this roll. Strain was not changed.",
+      "strainUnavailable": "{actor} does not have a Strain track, so this effect cannot be applied automatically.",
+      "strainApplied": "Automatically updated {actor}'s Strain: {before} → {after}.",
+      "effectApplied": "Applied {effect} to {actor}. Total for the next check: {count}.",
+      "effectNames": {
+        "boost": "Boost",
+        "setback": "Setback",
+        "upgradeAbility": "Upgrade Ability",
+        "upgradeDifficulty": "Upgrade Difficulty"
+      },
+      "nextAllyQueued": "Queued {effect} for the next allied initiative slot. It will be applied when that slot is claimed.",
+      "nextAllyAppliedTitle": "Next allied slot claimed",
+      "nextAllyApplied": "Applied {effect} to {actor}. Total for the next check: {count}."
+    },
+    "targetLabel": "Effect target",
+    "noEligibleTarget": "There is no eligible character for this effect.",
+    "targetRequired": "Choose the character who should receive this effect.",
+    "targetInvalid": "The selected character is no longer a valid target for this effect.",
+    "nextAllySlotWaiting": "This effect will be applied automatically when the next allied initiative slot is claimed.",
+    "noNextAllySlot": "No eligible next allied initiative slot is available. Start an encounter and make sure initiative slots have the correct dispositions.",
+    "currentTargetLabel": "Current roll owner target",
+    "noCurrentTarget": "The owner of this roll is not currently targeting a token. Target exactly one token first.",
+    "multipleCurrentTargets": "The owner of this roll currently has multiple targets. Leave exactly one token targeted for this effect.",
+    "targetChanged": "The roll owner’s current target changed. Reopen Spend Results and try again.",
+    "nextAllySlotGeneric": "Next allied initiative slot",
+    "activationLimitReached": "This quality cannot be activated more than {count} time(s) from this roll."
+  },
+  "nextCheckEffects": {
+    "hudStackTooltip": "Left click: add 1 stack. Right click: remove 1 stack. Current: {count}."
+  },
+  "pilot": {
+    "title": "Character Pilot",
+    "action": "Action",
+    "available": "Available",
+    "used": "Used",
+    "maneuvers": "Maneuvers",
+    "incidental": "Incidental",
+    "strain": "Strain",
+    "max": "max",
+    "yourTurn": "Your turn",
+    "notYourTurn": "Not your turn",
+    "outsideCombat": "Outside combat",
+    "turnControls": "Turn controls",
+    "maneuverActions": "Maneuvers",
+    "quickActions": "Quick actions",
+    "currentTargets": "Current targets",
+    "activeEffects": "Active effects",
+    "gmTargetTools": "GM — targeted character",
+    "gmConfig": "GM — character configuration",
+    "maxManeuvers": "Maximum maneuvers per turn",
+    "maxManeuversHint": "GM-only, stored separately for this character. Default: 2. Additional maneuvers can be gained by spending 2 Strain or by converting an unused Action, up to this character-specific limit.",
+    "openSheet": "Open character sheet",
+    "chooseCharacter": "Character",
+    "choose": "Choose",
+    "save": "Save",
+    "use": "Use",
+    "chooseWeapon": "Weapon",
+    "chooseItem": "Item",
+    "drawn": "drawn",
+    "holstered": "holstered",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "noEffects": "No active effects.",
+    "noTarget": "No target selected.",
+    "actions": {
+      "markAction": "Mark Action used",
+      "restoreAction": "Restore Action",
+      "extraManeuver": "Buy extra maneuver (+{cost} Strain)",
+      "resetTurn": "Reset turn counters",
+      "aim": "Aim",
+      "guardedStance": "Guarded Stance",
+      "guardedActive": "Guarded Stance active",
+      "takeCover": "Take Cover",
+      "leaveCover": "Leave Cover",
+      "standUp": "Stand Up",
+      "assist": "Assist ally",
+      "move": "Move / change range band",
+      "manageGear": "Draw / holster weapon",
+      "useItem": "Use item",
+      "endTurn": "End turn",
+      "sufferStrain": "Suffer 1 Strain",
+      "healStrain": "Recover 1 Strain",
+      "addBoost": "Boost next check",
+      "addSetback": "Setback next check",
+      "upgradeAbility": "Upgrade Ability next check",
+      "upgradeDifficulty": "Upgrade Difficulty next check",
+      "actionToManeuver": "Convert Action to maneuver",
+      "clearAllEffects": "Remove all effects"
+    },
+    "effects": {
+      "boostNext": "Boost — Next Check",
+      "setbackNext": "Setback — Next Check",
+      "upgradeAbilityNext": "Upgrade Ability — Next Check",
+      "upgradeDifficultyNext": "Upgrade Difficulty — Next Check",
+      "guardedStance": "Guarded Stance",
+      "cover": "Cover"
+    },
+    "statuses": {
+      "prone": "Prone",
+      "staggered": "Staggered",
+      "disoriented": "Disoriented",
+      "immobilized": "Immobilized",
+      "invisible": "Invisible",
+      "blinded": "Blinded"
+    },
+    "errors": {
+      "noActor": "No character is available for the Character Pilot. Select an owned token or assign a character to your user.",
+      "noStrain": "This character has no Strain track.",
+      "notYourTurn": "This is not this character’s active turn.",
+      "noManeuver": "No maneuver is currently available. Buy another maneuver first if the character can take one.",
+      "maxManeuvers": "This character has reached the configured maximum of {max} maneuvers this turn.",
+      "guardedAlready": "Guarded Stance is already active.",
+      "noTarget": "Target exactly one token first.",
+      "oneTarget": "These GM tools require exactly one targeted token.",
+      "noAllies": "No eligible allied characters are on the active scene.",
+      "noWeapons": "This character has no weapons to draw or holster.",
+      "noUsableItems": "No usable inventory items were found.",
+      "noCombat": "There is no active combat.",
+      "cannotEndTurn": "The current combat cannot advance to the next turn.",
+      "generic": "Character Pilot action failed.",
+      "noActiveGM": "No active GM is available to perform this action for another character.",
+      "actionAlreadyUsed": "The Action has already been used or converted this turn.",
+      "convertedManeuverUsed": "The maneuver gained by converting the Action has already been used, so the Action cannot be restored this turn."
+    },
+    "warnings": {
+      "defensePath": "Could not find the actor data path for {type}. The effect was created, but its Defense bonus could not be automated.",
+      "statusMissing": "The system does not provide a usable status definition for: {status}."
+    },
+    "info": {
+      "extraManeuverBought": "Extra maneuver purchased for {cost} Strain.",
+      "leftCover": "Cover removed.",
+      "weaponDrawn": "{item} drawn / readied.",
+      "weaponHolstered": "{item} holstered.",
+      "maxManeuversSaved": "Maximum maneuvers for this character set to {max}.",
+      "gmRequestSent": "Request sent to the GM.",
+      "endTurnRequested": "End-turn request sent to the GM.",
+      "actionConverted": "Unused Action converted into one additional maneuver for this turn.",
+      "effectsCleared": "Removed {count} effects from {name}.",
+      "noEffectsToClear": "There are no effects to remove from {name}."
+    },
+    "openFromToken": "Open Character Pilot",
+    "clearEffectsTitle": "Remove all effects?",
+    "clearEffectsConfirm": "Remove all Active Effects from {name}? Effects to remove: {count}. This cannot be undone.",
+    "cancel": "Cancel"
+  },
+  "weaponAutomation": {
+    "weapon": "Weapon",
+    "target": "target",
+    "rollPanelTitle": "Weapon qualities",
+    "useAutoFire": "Use Auto-Fire (+1 Difficulty)",
+    "publishDamage": "Publish Damage",
+    "damagePublished": "Damage published",
+    "damageApplied": "Damage applied",
+    "inlineDamageSummary": "Applied {damage} damage to {actor}.",
+    "fudgeHit": "Force Hit",
+    "activateQuality": "Activate {quality}",
+    "rollMods": {
+      "accurate": "+{count} Boost from Accurate",
+      "inaccurate": "+{count} Setback from Inaccurate",
+      "cumbersome": "+{count} Difficulty from Cumbersome (Brawn below rating)",
+      "superior": "+1 automatic Advantage from Superior",
+      "inferior": "+1 automatic Threat from Inferior"
+    },
+    "rollWarnings": {
+      "prepare": "Prepare {rank}: requires {rank} preparation maneuver(s) before attacking.",
+      "slowFiring": "Slow-Firing {rank}: remember the cooldown after firing.",
+      "limitedAmmo": "Limited Ammo {rank}: track remaining shots/reloads."
+    },
+    "qualities": {
+      "accurate": {
+        "name": "Accurate",
+        "description": "Adds Boost dice to checks made with the weapon."
+      },
+      "autofire": {
+        "name": "Auto-Fire",
+        "description": "Spend results for an additional hit. Auto-Fire also increases attack difficulty by one when enabled before the roll."
+      },
+      "breach": {
+        "name": "Breach",
+        "description": "Ignores 1 point of vehicle Armor or 10 points of personal Soak per rank, unless Cortosis applies."
+      },
+      "burn": {
+        "name": "Burn",
+        "description": "Applies Burn for a number of rounds equal to its rating."
+      },
+      "blast": {
+        "name": "Blast",
+        "description": "Deals Blast damage to characters engaged with the original target. On a miss it costs 3 Advantage."
+      },
+      "concussive": {
+        "name": "Concussive",
+        "description": "Staggers the target for rounds equal to the rating."
+      },
+      "cortosis": {
+        "name": "Cortosis",
+        "description": "Prevents Pierce and Breach from reducing Soak/Armor."
+      },
+      "cumbersome": {
+        "name": "Cumbersome",
+        "description": "Increases the difficulty of checks made with the weapon by one per point of Brawn below the rating."
+      },
+      "defensive": {
+        "name": "Defensive",
+        "description": "Increases melee defense while the weapon is wielded."
+      },
+      "deflection": {
+        "name": "Deflection",
+        "description": "Increases ranged defense while the weapon is wielded."
+      },
+      "disorient": {
+        "name": "Disorient",
+        "description": "Applies a Setback to the target’s skill checks for rounds equal to the rating."
+      },
+      "ensnare": {
+        "name": "Ensnare",
+        "description": "Immobilizes the target for rounds equal to the rating."
+      },
+      "guided": {
+        "name": "Guided",
+        "description": "After a miss, spend 3 Advantage or a Triumph to continue toward the original target; the follow-up attack remains contextual."
+      },
+      "inaccurate": {
+        "name": "Inaccurate",
+        "description": "Adds Setback dice to checks made with the weapon."
+      },
+      "inferior": {
+        "name": "Inferior",
+        "description": "Adds one automatic Threat to checks with the item and reduces weapon base damage by 1."
+      },
+      "ion": {
+        "name": "Ion",
+        "description": "Damage is applied as Strain/System Strain where possible."
+      },
+      "limitedammo": {
+        "name": "Limited Ammo",
+        "description": "The weapon has a limited number of shots before reloading."
+      },
+      "linked": {
+        "name": "Linked",
+        "description": "Spend results for additional hits, up to the Linked rating."
+      },
+      "knockdown": {
+        "name": "Knockdown",
+        "description": "Knocks the target prone; Advantage cost increases with target silhouette."
+      },
+      "pierce": {
+        "name": "Pierce",
+        "description": "Ignores personal Soak equal to the rating, unless Cortosis applies."
+      },
+      "prepare": {
+        "name": "Prepare",
+        "description": "Requires preparation maneuvers before use."
+      },
+      "slowfiring": {
+        "name": "Slow-Firing",
+        "description": "The weapon needs cooldown rounds after firing."
+      },
+      "stun": {
+        "name": "Stun",
+        "description": "Inflicts Strain equal to the Stun rating when activated."
+      },
+      "stundamage": {
+        "name": "Stun Damage",
+        "description": "Normal weapon damage is applied to Strain instead of Wounds, still reduced by Soak."
+      },
+      "sunder": {
+        "name": "Sunder",
+        "description": "Damages one item wielded by the target one step; choose the affected item manually."
+      },
+      "superior": {
+        "name": "Superior",
+        "description": "Adds one automatic Advantage to checks with the item and increases weapon base damage by 1."
+      },
+      "tractor": {
+        "name": "Tractor",
+        "description": "On a vehicle hit, marks the target with the Tractor rating."
+      },
+      "vicious": {
+        "name": "Vicious",
+        "description": "Adds +10 per rank to Critical Injury/Critical Hit rolls."
+      }
+    },
+    "automation": {
+      "autofire": "Auto-Fire extra hit prepared.",
+      "linked": "Linked extra hit prepared.",
+      "extraHitReady": "{quality}: an additional hit damage card ({damage}) was created.",
+      "blast": "Blast affects characters engaged with {target}.",
+      "blastReady": "Blast damage card created for {damage} damage before Soak.",
+      "burn": "{actor} is Burning for {rounds} round(s); each tick uses base damage {damage}.",
+      "concussive": "{actor} is Staggered for {rounds} round(s).",
+      "disorient": "{actor} is Disoriented for {rounds} round(s).",
+      "ensnare": "{actor} is Immobilized for {rounds} round(s).",
+      "knockdown": "{actor} is knocked Prone.",
+      "stun": "{actor} suffers {strain} Strain.",
+      "guided": "Guided {rank} activated against {actor}; resolve the Guided follow-up check at the appropriate time.",
+      "sunder": "Sunder activated against {actor}; damage one appropriate item one step.",
+      "announced": "{quality} activated."
+    },
+    "damageTypes": {
+      "wounds": "Wounds",
+      "strain": "Strain",
+      "hullTrauma": "Hull Trauma",
+      "systemStrain": "System Strain"
+    },
+    "damageCard": {
+      "title": "Weapon Damage",
+      "extraHitTitle": "{quality} — Additional Hit",
+      "blastTitle": "Blast {rank}",
+      "breakdown": "Base {base} + {successes} Success = {total} damage",
+      "flatDamage": "{total} damage",
+      "apply": "Apply Damage",
+      "appliedNotice": "Applied {damage} damage to {actor}.",
+      "appliedTitle": "Damage applied",
+      "appliedLine": "{damage} {type}",
+      "reduction": "Soak/Armor {soak}, ignored {ignored}, effective {effective}",
+      "cortosisBlocked": "Cortosis prevents Pierce/Breach from reducing Soak/Armor.",
+      "calculation": "Raw damage {raw}; {reduction}",
+      "trackChange": "Track: {before} → {after}"
+    },
+    "errors": {
+      "generic": "Weapon automation failed.",
+      "disabled": "Weapon automation is disabled.",
+      "notWeaponRoll": "This is not a weapon roll.",
+      "notSuccessfulWeaponRoll": "Damage can only be published from a successful weapon attack.",
+      "sourceMessageMissing": "The source roll message no longer exists.",
+      "damageCardMissing": "Damage card data is missing.",
+      "selectOneToken": "Select exactly one owned token before applying damage.",
+      "noDamageTarget": "No valid owned character/token is available for damage.",
+      "noGM": "No active GM is available.",
+      "notOwner": "You do not own the selected damage target.",
+      "alreadyApplied": "This damage card has already been applied to that character.",
+      "noDamageTrack": "The target has no supported Wounds/Hull Trauma track.",
+      "targetMissing": "The weapon quality requires exactly one target.",
+      "noStrainTrack": "The target has no Strain track."
+    },
+    "criticalViciousHint": "Vicious adds +{modifier} to the Critical Injury/Critical Hit roll.",
+    "fudgeSuccesses": "Successes"
+  },
+  "criticalManager": {
+    "title": "Critical Injury Manager",
+    "target": "Target character",
+    "criticalType": "Critical injury type",
+    "modifier": "Critical roll modifier",
+    "manualModifier": "Additional modifier",
+    "existingCriticals": "Existing Critical Injuries",
+    "totalModifier": "Total modifier",
+    "noExistingCriticals": "No existing Critical Injuries.",
+    "selectedTokenHint": "The target is taken from the currently selected token. With multiple selected tokens, choose one above.",
+    "playerListHint": "No token is selected — choose a player character.",
+    "noTargets": "No selected token and no player character is available.",
+    "entriesLoaded": "critical results loaded",
+    "coverage": "D100 coverage",
+    "invalidEntries": "{count} item(s) were skipped because system.min/system.max is missing or invalid.",
+    "noFolders": "No Item folder with Critical Injury entries was found. Import the Critical Injury items into a world folder first.",
+    "rollCritical": "Roll Critical Injury",
+    "lastResult": "Last Critical Injury",
+    "severity": "Severity",
+    "addedToActor": "Added to {actor}.",
+    "chatTitle": "Critical Injury",
+    "unknownTable": "Unknown table",
+    "rollBreakdown": "D100 {roll} {manual} manual {existing} existing = {total}",
+    "existingCountChat": "Existing Critical Injuries before this roll: {count}.",
+    "notifications": {
+      "applied": "{injury} was added to {actor}."
+    },
+    "errors": {
+      "generic": "Critical Injury Manager failed. See console for details.",
+      "gmOnly": "Only a GM can use the Critical Injury Manager.",
+      "noTarget": "Choose a target character first.",
+      "noFolder": "Choose a Critical Injury source folder.",
+      "noValidEntries": "The selected folder has no Critical Injury items with valid D100 min/max ranges.",
+      "noMatchingRange": "No Critical Injury in this folder covers result {total}.",
+      "applyFailed": "The Critical Injury could not be added to the actor."
+    }
+  },
+  "defenseSkills": {
+    "title": "Additional Defense skills",
+    "intro": "Assign additional skills to Melee Defense or Ranged Defense. When you roll one of these skills while targeting a token, that target’s Defense is automatically added to the pool as Setback dice.",
+    "systemNote": "Standard combat skills already handled by StarWarsFFG are marked below and cannot be assigned again, preventing Defense from being counted twice.",
+    "skillHeader": "Skill",
+    "noneHeader": "None",
+    "meleeHeader": "Melee Defense",
+    "rangedHeader": "Ranged Defense",
+    "nativeHeader": "System handling",
+    "searchPlaceholder": "Search skills by name or ID…",
+    "noSkills": "No skills were found in the active skill set or on actors in this world.",
+    "save": "Save settings",
+    "saved": "Additional Defense skill configuration saved.",
+    "nativeMelee": "Native: Melee Defense",
+    "nativeRanged": "Native: Ranged Defense",
+    "meleeDefense": "Melee Defense",
+    "rangedDefense": "Ranged Defense",
+    "rollApplied": "{skill}: +{count} Setback from target {defense}."
+  },
+  "combatCarousel": {
+    "pcSlot": "PC Slot",
+    "npcSlot": "NPC Slot",
+    "neutralSlot": "Neutral Slot",
+    "freeSlot": "Free slot",
+    "free": "Free",
+    "claim": "Claim",
+    "current": "Current",
+    "previous": "Previous slot",
+    "next": "Next slot",
+    "round": "Round {round}",
+    "hiddenNpc": "Hidden NPC",
+    "hiddenCombatant": "Hidden combatant",
+    "selectOneToken": "Select exactly one token that should claim this initiative slot.",
+    "notInCombat": "The selected token is not in this combat.",
+    "defeated": "A defeated combatant cannot claim an initiative slot.",
+    "alreadyHasSlot": "This combatant has already claimed a slot this round.",
+    "alreadyClaimed": "This initiative slot has already been claimed.",
+    "wrongSlotType": "The selected token cannot claim this type of initiative slot.",
+    "gmOnlyNpc": "Only the GM can claim NPC initiative slots.",
+    "claimFailed": "Could not claim the initiative slot.",
+    "unused": "Unused",
+    "onlyCurrent": "Only the current initiative slot can be claimed.",
+    "unusedSlot": "This initiative slot is currently unused and cannot be claimed."
   }
 }

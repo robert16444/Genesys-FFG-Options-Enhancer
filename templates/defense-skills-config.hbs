@@ -1,0 +1,51 @@
+<section class="gfoe-defense-skills">
+  <p class="notes">{{intro}}</p>
+  <p class="notes gfoe-defense-system-note"><i class="fa-solid fa-circle-info"></i> {{systemNote}}</p>
+
+  <div class="gfoe-defense-search-wrap">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" data-gfoe-defense-search placeholder="{{searchPlaceholder}}" autocomplete="off" />
+  </div>
+
+  <div class="gfoe-defense-skills-table-wrap">
+    <table class="gfoe-defense-skills-table">
+      <thead>
+        <tr>
+          <th>{{skillHeader}}</th>
+          <th class="gfoe-defense-choice">{{noneHeader}}</th>
+          <th class="gfoe-defense-choice">{{meleeHeader}}</th>
+          <th class="gfoe-defense-choice">{{rangedHeader}}</th>
+          <th>{{nativeHeader}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each skills}}
+        <tr data-gfoe-defense-skill-row data-skill-id="{{id}}" data-skill-label="{{label}}" class="{{#if nativeKind}}gfoe-defense-native-row{{/if}}">
+          <td>
+            <strong>{{label}}</strong>
+            <div class="notes"><code>{{id}}</code>{{#if value}} · {{value}}{{/if}}</div>
+          </td>
+          {{#if nativeKind}}
+            <td class="gfoe-defense-choice"><input type="radio" checked disabled aria-label="{{../noneHeader}}" /></td>
+            <td class="gfoe-defense-choice"><input type="radio" disabled aria-label="{{../meleeHeader}}" /></td>
+            <td class="gfoe-defense-choice"><input type="radio" disabled aria-label="{{../rangedHeader}}" /></td>
+            <td><span class="gfoe-defense-native-badge"><i class="fa-solid fa-check"></i> {{nativeLabel}}</span></td>
+          {{else}}
+            <td class="gfoe-defense-choice"><input type="radio" name="defense-skill-{{@index}}" value="none" data-skill-id="{{id}}" {{#if selectedNone}}checked{{/if}} aria-label="{{../noneHeader}}" /></td>
+            <td class="gfoe-defense-choice"><input type="radio" name="defense-skill-{{@index}}" value="melee" data-skill-id="{{id}}" {{#if selectedMelee}}checked{{/if}} aria-label="{{../meleeHeader}}" /></td>
+            <td class="gfoe-defense-choice"><input type="radio" name="defense-skill-{{@index}}" value="ranged" data-skill-id="{{id}}" {{#if selectedRanged}}checked{{/if}} aria-label="{{../rangedHeader}}" /></td>
+            <td></td>
+          {{/if}}
+        </tr>
+        {{/each}}
+        {{#unless skills.length}}
+        <tr><td colspan="5" class="notes">{{noSkills}}</td></tr>
+        {{/unless}}
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="gfoe-defense-config-footer">
+    <button type="submit"><i class="fa-solid fa-floppy-disk"></i> {{save}}</button>
+  </footer>
+</section>

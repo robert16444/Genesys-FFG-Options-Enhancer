@@ -23,39 +23,27 @@ export async function openTalentSearch() {
   if (ownedActors.length === 1) {
     actor = ownedActors[0];
   } else {
-    actor = await new Promise((resolve) => {
-      const options = ownedActors
-        .map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`)
-        .join("");
+    const options = ownedActors
+      .map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`)
+      .join("");
 
-      const content = `
+    const actorId = await foundry.applications.api.DialogV2.prompt({
+      window: { title: Lang.t("talent.selectActor.title"), icon: "fa-solid fa-user" },
+      position: { width: 420, height: "auto" },
+      content: `
         <div style="margin-bottom: 0.5rem;">
-          <label for="actor-select"><strong>${Lang.t("talent.selectActor.label")}:</strong></label>
-          <select id="actor-select" style="width: 100%; margin-top: 0.25rem;">
-            ${options}
-          </select>
-        </div>
-      `;
-
-      new Dialog({
-        title: Lang.t("talent.selectActor.title"),
-        content,
-        buttons: {
-          ok: {
-            label: Lang.t("talent.selectActor.next"),
-            callback: (html) => {
-              const id = html.find("#actor-select").val();
-              resolve(game.actors.get(id));
-            }
-          },
-          cancel: {
-            label: Lang.t("talent.selectActor.cancel"),
-            callback: () => resolve(null)
-          }
-        },
-        default: "ok"
-      }).render(true);
+          <label><strong>${Lang.t("talent.selectActor.label")}:</strong>
+            <select name="actorId" style="width: 100%; margin-top: 0.25rem;">${options}</select>
+          </label>
+        </div>`,
+      modal: false,
+      rejectClose: false,
+      ok: {
+        label: Lang.t("talent.selectActor.next"),
+        callback: (_event, button) => button.form?.elements?.actorId?.value ?? null
+      }
     });
+    actor = actorId ? game.actors.get(actorId) : null;
     if (!actor) return;
   }
 
@@ -206,25 +194,34 @@ export async function openTalentSearch() {
     </div>
   `;
 
-  const d = new Dialog({
-    title: Lang.t("talent.searchTitleFor", {actor: actor?.name ?? ""}),
+  await foundry.applications.api.DialogV2.wait({
+    window: {
+      title: Lang.t("talent.searchTitleFor", {actor: actor?.name ?? ""}),
+      icon: "fa-solid fa-magnifying-glass"
+    },
+    position: { width: 650, height: "auto" },
     content,
-    buttons: { close: { label: Lang.t("common.close") } },
-    default: "close",
-    render: (html) => {
-      const root = html.find(`#${dialogId}`);
-      const searchInput = root.find("#talent-search-input");
-      const listContainer = root.find("#talent-list-container");
-      const countSpan = root.find("#talent-count");
-      const showAllBtn = root.find("#talent-show-all");
-      const expandAllBtn = root.find("#talent-expand-all");
-      const collapseAllBtn = root.find("#talent-collapse-all");
-      const hideEmptyCheckbox = root.find("#hide-empty-desc");
+    modal: false,
+    rejectClose: false,
+    buttons: [{ action: "close", label: Lang.t("common.close"), icon: "fa-solid fa-xmark" }],
+    render: (_event, app) => {
+      const appRoot = app.element;
+      const root = appRoot?.querySelector?.(`#${dialogId}`);
+      if (!root) return;
+
+      const searchInput = root.querySelector("#talent-search-input");
+      const listContainer = root.querySelector("#talent-list-container");
+      const countSpan = root.querySelector("#talent-count");
+      const showAllBtn = root.querySelector("#talent-show-all");
+      const expandAllBtn = root.querySelector("#talent-expand-all");
+      const collapseAllBtn = root.querySelector("#talent-collapse-all");
+      const hideEmptyCheckbox = root.querySelector("#hide-empty-desc");
+      if (!searchInput || !listContainer || !countSpan) return;
 
       let hideEmpty = false;
 
       function updateList() {
-        const rawQuery = (searchInput.val() ?? "").toString();
+        const rawQuery = String(searchInput.value ?? "");
         const query = rawQuery.toLowerCase().trim();
         const forceExpand = !!query;
 
@@ -232,33 +229,27 @@ export async function openTalentSearch() {
           ? Array.from(talentData)
           : talentData.filter(t => t.searchText.includes(query));
 
-        if (hideEmpty) {
-          filtered = filtered.filter(t => stripHtml(t.description).length > 0);
-        }
+        if (hideEmpty) filtered = filtered.filter(t => stripHtml(t.description).length > 0);
 
-        countSpan.text(filtered.length);
-        listContainer.html(renderTalentList(filtered, forceExpand, query));
+        countSpan.textContent = String(filtered.length);
+        listContainer.innerHTML = renderTalentList(filtered, forceExpand, query);
       }
 
-      searchInput.on("input", () => updateList());
-
-      showAllBtn.on("click", () => {
-        searchInput.val("");
+      searchInput.addEventListener("input", updateList);
+      showAllBtn?.addEventListener("click", () => {
+        searchInput.value = "";
         updateList();
       });
-
-      expandAllBtn.on("click", () => {
-        listContainer.find(".talent-description").show();
-        listContainer.find(".talent-toggle-desc").text("▲");
+      expandAllBtn?.addEventListener("click", () => {
+        listContainer.querySelectorAll(".talent-description").forEach(el => { el.style.display = "block"; });
+        listContainer.querySelectorAll(".talent-toggle-desc").forEach(el => { el.textContent = "▲"; });
       });
-
-      collapseAllBtn.on("click", () => {
-        listContainer.find(".talent-description").hide();
-        listContainer.find(".talent-toggle-desc").text("▼");
+      collapseAllBtn?.addEventListener("click", () => {
+        listContainer.querySelectorAll(".talent-description").forEach(el => { el.style.display = "none"; });
+        listContainer.querySelectorAll(".talent-toggle-desc").forEach(el => { el.textContent = "▼"; });
       });
-
-      hideEmptyCheckbox.on("change", ev => {
-        hideEmpty = ev.currentTarget.checked;
+      hideEmptyCheckbox?.addEventListener("change", event => {
+        hideEmpty = Boolean(event.currentTarget?.checked);
         updateList();
       });
 
@@ -277,15 +268,10 @@ export async function openTalentSearch() {
           return;
         }
 
-
-        let newValue = current - cost;
-        if (newValue < 0) newValue = 0;
-
+        const newValue = Math.max(0, current - cost);
         try {
           await actor.update({ "system.stats.forcePool.value": newValue });
-
           const levelInfo = (option.level != null) ? `Poziom ${option.level}` : "Wybrany wariant";
-
           await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor }),
             content: `
@@ -294,8 +280,7 @@ export async function openTalentSearch() {
               <hr/>
               <p><strong>${levelInfo}</strong></p>
               <p>${Lang.t("talent.castDialog.spentMana", {cost: `<strong>${cost}</strong>`})}</p>
-              <p>Force Pool: ${current} ➜ <strong>${newValue}</strong> / ${max}</p>
-            `
+              <p>Force Pool: ${current} ➜ <strong>${newValue}</strong> / ${max}</p>`
           });
         } catch (e) {
           console.error(e);
@@ -303,103 +288,99 @@ export async function openTalentSearch() {
         }
       }
 
-      root.on("click", ".talent-toggle-desc", (ev) => {
-        const btn = $(ev.currentTarget);
-        const entry = btn.closest(".talent-entry");
-        const box = entry.find(".talent-description");
-        const hidden = box.is(":hidden");
-        box.toggle(hidden);
-        btn.text(hidden ? "▲" : "▼");
-      });
-
-      root.on("click", ".talent-chat-button", async (ev) => {
-        const btn = ev.currentTarget;
-        const id = btn.dataset.talentId;
-        const source = btn.dataset.source;
-        const t = talentData.find(tt => tt.id === id);
-        if (!t) return;
-
-        try {
-          if (source === "item") {
-            const item = actor.items.get(id);
-            if (item?.toChat) {
-              item.toChat();
-            } else if (item) {
-              const desc = getTalentDescription(item) || "";
-              await ChatMessage.create({
-                speaker: ChatMessage.getSpeaker({ actor }),
-                content: `<h2>${escapeHtml(item.name)}</h2>${desc || "<p><em>Brak opisu.</em></p>"}`
-              });
-            }
-          } else {
-            await ChatMessage.create({
-              speaker: ChatMessage.getSpeaker({ actor }),
-              content: `
-                <h2>${escapeHtml(t.name)}</h2>
-                ${t.description || "<p><em>Brak opisu.</em></p>"}
-                ${t.origin ? `<p><em>${Lang.t("talent.ui.source")}: ${escapeHtml(t.origin)}</em></p>` : ""}
-              `
-            });
-          }
-        } catch (e) {
-          console.error(e);
-          ui.notifications.error(Lang.t("talent.error.sendToChatFailed"));
-        }
-      });
-
-      root.on("click", ".talent-cast-button", (ev) => {
-        const btn = ev.currentTarget;
-        const id = btn.dataset.talentId;
-        const t = talentData.find(tt => tt.id === id);
-        if (!t || !t.activationOptions || !t.activationOptions.length) return;
-
-        if (t.activationOptions.length === 1) {
-          performCast(t.activationOptions[0], t);
+      root.addEventListener("click", async event => {
+        const toggle = event.target?.closest?.(".talent-toggle-desc");
+        if (toggle && root.contains(toggle)) {
+          event.preventDefault();
+          const entry = toggle.closest(".talent-entry");
+          const box = entry?.querySelector?.(".talent-description");
+          if (!box) return;
+          const hidden = box.style.display === "none" || box.hidden;
+          box.style.display = hidden ? "block" : "none";
+          toggle.textContent = hidden ? "▲" : "▼";
           return;
         }
 
-        const optionsHtml = t.activationOptions.map((opt, idx) => {
-          const label = (opt.level != null)
-            ? `${Lang.t("talent.level")} ${opt.level} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}` : `${Lang.t("talent.variant")} ${idx + 1} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}`;
-
-          return `
-            <div style="margin-bottom:0.5rem;">
-              <label>
-                <input type="radio" name="spell-level" value="${idx}" ${idx === 0 ? "checked" : ""}>
-                ${escapeHtml(label)}
-              </label>
-              <pre style="white-space:pre-wrap; border:1px solid #666; padding:4px; margin-top:2px; max-height:150px; overflow-y:auto;">${escapeHtml(opt.blockText)}</pre>
-            </div>
-          `;
-        }).join("");
-
-        new Dialog({
-          title: `${Lang.t("talent.castSpell")} - ${t.name}`,
-          content: `
-            <div style="margin-bottom:0.5rem;"><strong>${Lang.t("talent.cast.chooseLevel")}</strong></div>
-            <form>${optionsHtml}</form>
-          `,
-          buttons: {
-            cast: {
-              label: Lang.t("talent.cast"),
-              callback: (html) => {
-                const val = html.find("input[name='spell-level']:checked").val();
-                const index = Number(val ?? 0);
-                const opt = t.activationOptions[index];
-                if (opt) performCast(opt, t);
+        const chatButton = event.target?.closest?.(".talent-chat-button");
+        if (chatButton && root.contains(chatButton)) {
+          event.preventDefault();
+          const id = chatButton.dataset.talentId;
+          const source = chatButton.dataset.source;
+          const talent = talentData.find(tt => tt.id === id);
+          if (!talent) return;
+          try {
+            if (source === "item") {
+              const item = actor.items.get(id);
+              if (item?.toChat) item.toChat();
+              else if (item) {
+                const desc = getTalentDescription(item) || "";
+                await ChatMessage.create({
+                  speaker: ChatMessage.getSpeaker({ actor }),
+                  content: `<h2>${escapeHtml(item.name)}</h2>${desc || "<p><em>Brak opisu.</em></p>"}`
+                });
               }
-            },
-            cancel: { label: Lang.t("talent.selectActor.cancel") }
-          },
-          default: "cast"
-        }).render(true);
+            } else {
+              await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `
+                  <h2>${escapeHtml(talent.name)}</h2>
+                  ${talent.description || "<p><em>Brak opisu.</em></p>"}
+                  ${talent.origin ? `<p><em>${Lang.t("talent.ui.source")}: ${escapeHtml(talent.origin)}</em></p>` : ""}`
+              });
+            }
+          } catch (e) {
+            console.error(e);
+            ui.notifications.error(Lang.t("talent.error.sendToChatFailed"));
+          }
+          return;
+        }
+
+        const castButton = event.target?.closest?.(".talent-cast-button");
+        if (castButton && root.contains(castButton)) {
+          event.preventDefault();
+          const id = castButton.dataset.talentId;
+          const talent = talentData.find(tt => tt.id === id);
+          if (!talent?.activationOptions?.length) return;
+
+          if (talent.activationOptions.length === 1) {
+            await performCast(talent.activationOptions[0], talent);
+            return;
+          }
+
+          const optionsHtml = talent.activationOptions.map((opt, idx) => {
+            const label = (opt.level != null)
+              ? `${Lang.t("talent.level")} ${opt.level} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}`
+              : `${Lang.t("talent.variant")} ${idx + 1} – ${Lang.t("talent.cost")}: ${opt.cost} ${Lang.t("talent.mana")}`;
+            return `
+              <div style="margin-bottom:0.5rem;">
+                <label>
+                  <input type="radio" name="spellLevel" value="${idx}" ${idx === 0 ? "checked" : ""}>
+                  ${escapeHtml(label)}
+                </label>
+                <pre style="white-space:pre-wrap; border:1px solid #666; padding:4px; margin-top:2px; max-height:150px; overflow-y:auto;">${escapeHtml(opt.blockText)}</pre>
+              </div>`;
+          }).join("");
+
+          const selected = await foundry.applications.api.DialogV2.prompt({
+            window: { title: `${Lang.t("talent.castSpell")} - ${talent.name}`, icon: "fa-solid fa-wand-magic-sparkles" },
+            position: { width: 560, height: "auto" },
+            content: `<div style="margin-bottom:0.5rem;"><strong>${Lang.t("talent.cast.chooseLevel")}</strong></div>${optionsHtml}`,
+            modal: false,
+            rejectClose: false,
+            ok: {
+              label: Lang.t("talent.cast"),
+              callback: (_event, button) => button.form?.elements?.spellLevel?.value ?? "0"
+            }
+          });
+          if (selected == null) return;
+          const option = talent.activationOptions[Number(selected) || 0];
+          if (option) await performCast(option, talent);
+        }
       });
 
       updateList();
     }
-  }, { width: 650 });
-
-  d.render(true);
+  });
 }
 
 function getTalentDescription(item) {
@@ -432,7 +413,7 @@ function highlightTerm(html, term) {
   const regex = new RegExp(`(${safeTerm})`, "gi");
   return String(html ?? "").replace(
     regex,
-    `<span style="background-color: rgba(255,0,0,0.25); border-radius: 3px;">$1</span>`
+    `<span class="gfoe-search-highlight">$1</span>`
   );
 }
 
