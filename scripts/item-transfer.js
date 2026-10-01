@@ -29,9 +29,10 @@ function isAllowedItem(item) {
 }
 
 const MSG = {
-  REQUEST_TO_GM: "ITEM_TRANSFER_REQUEST_TO_GM",
-  REQUEST_TO_RECIPIENT: "ITEM_TRANSFER_REQUEST_TO_RECIPIENT",
-  RESPONSE_TO_GM: "ITEM_TRANSFER_RESPONSE_TO_GM",
+  OFFER_TO_RECIPIENT: "ITEM_TRANSFER_OFFER_TO_RECIPIENT",
+  RESPONSE_TO_SENDER: "ITEM_TRANSFER_RESPONSE_TO_SENDER",
+  COMMIT_TO_RECIPIENT: "ITEM_TRANSFER_COMMIT_TO_RECIPIENT",
+  RESULT_TO_SENDER: "ITEM_TRANSFER_RESULT_TO_SENDER",
   INFO_TO_USERS: "ITEM_TRANSFER_INFO_TO_USERS"
 };
 
@@ -40,7 +41,9 @@ const contextMenuDocuments = new WeakSet();
 const contextMenuObservers = new WeakMap();
 const pendingTransfers = new Map();
 const transfersInProgress = new Set();
+const recipientCommitResults = new Map();
 const OFFER_LIFETIME_MS = 10 * 60 * 1000;
+const COMMIT_TIMEOUT_MS = 15000;
 
 function getItemQuantity(item) {
   const raw = item?.system?.quantity?.value;
@@ -97,13 +100,11 @@ function canStackItems(sourceItem, targetItem) {
   return itemStackSignature(sourceItem) === itemStackSignature(targetItem);
 }
 
-function isPrimaryGM() {
-  const activeGM = game.users.find(user => user.active && user.isGM);
-  return game.user.isGM && activeGM?.id === game.user.id;
-}
-
 async function notifyTransferUsers(userIds, message) {
-  await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: userIds, message });
+  const ids = Array.isArray(userIds) ? [...new Set(userIds.filter(Boolean))] : [];
+  if (ids.includes(game.user.id) && message) ui.notifications?.info?.(message);
+  const remoteIds = ids.filter(id => id !== game.user.id);
+  if (remoteIds.length) await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: remoteIds, message });
 }
 
 export function registerItemTransferFeature() {
@@ -451,17 +452,33 @@ async function onSendItemClicked(fromActor, itemId, sourceElement = null) {
             if (!quantity || !currentItem || quantity > currentStock) {
               return ui.notifications.warn(__t("itemTransfer.invalidQuantity", { quantity: Number.isSafeInteger(currentStock) ? currentStock : 0 }));
             }
-            const requestPayload = {
-              type: MSG.REQUEST_TO_GM,
+            const toUser = game.users.get(toUserId);
+            const toActor = toUser?.character ? game.actors.get(toUser.character.id) : null;
+            if (!toUser?.active || !toActor) return ui.notifications.warn(__t("itemTransfer.noEligible"));
+            if (!toActor.testUserPermission(toUser, "OWNER")) return ui.notifications.warn(__t("itemTransfer.recipientNoPermission"));
+
+            const requestId = foundry.utils.randomID();
+            const offer = {
+              requestId,
+              createdAt: Date.now(),
+              phase: "offered",
               fromUserId: game.user.id,
               fromActorId: fromActor.id,
               itemId,
               quantity,
-              toUserId
+              toUserId,
+              toActorId: toActor.id
             };
+            pendingTransfers.set(requestId, offer);
 
-            if (isPrimaryGM()) await handleRequestToGM(requestPayload);
-            else await emitToModuleSocket(requestPayload);
+            await emitToModuleSocket({
+              type: MSG.OFFER_TO_RECIPIENT,
+              ...offer,
+              fromUserName: game.user.name,
+              itemName: currentItem.name,
+              itemImg: currentItem.img ?? "icons/svg/item-bag.svg",
+              itemType: currentItem.type
+            });
 
             ui.notifications.info(__t("itemTransfer.sent"));
           }
@@ -508,81 +525,35 @@ export async function handleItemTransferSocket(payload) {
   if (!isItemTransferEnabled() || !payload?.type) return;
 
   switch (payload.type) {
-    case MSG.REQUEST_TO_GM:
-      return handleRequestToGM(payload);
-    case MSG.REQUEST_TO_RECIPIENT:
-      return handleRequestToRecipient(payload);
-    case MSG.RESPONSE_TO_GM:
-      return handleResponseToGM(payload);
+    case MSG.OFFER_TO_RECIPIENT:
+      return handleOfferToRecipient(payload);
+    case MSG.RESPONSE_TO_SENDER:
+      return handleResponseToSender(payload);
+    case MSG.COMMIT_TO_RECIPIENT:
+      return handleCommitToRecipient(payload);
+    case MSG.RESULT_TO_SENDER:
+      return handleResultToSender(payload);
     case MSG.INFO_TO_USERS:
       return handleInfoToUsers(payload);
   }
 }
 
-async function handleRequestToGM(payload) {
-  if (!isPrimaryGM()) return;
-
-  const fromUser = game.users.get(payload.fromUserId);
-  const toUser = game.users.get(payload.toUserId);
-  const fromActor = game.actors.get(payload.fromActorId);
-  const toActor = toUser?.character ? game.actors.get(toUser.character.id) : null;
-  const item = fromActor?.items?.get(payload.itemId);
-
-  if (!fromUser || !toUser || !fromActor || !toActor || !item) return;
-
-  // The GM does not trust the quantity or the source actor supplied over the socket.
-  if (!fromUser.active || !toUser.active || toUser.isGM || fromUser.id === toUser.id ||
-      fromActor.id === toActor.id ||
-      (!fromUser.isGM && !fromActor.testUserPermission(fromUser, "OWNER"))) return;
-
-  if (!isAllowedItem(item)) {
-    await emitToModuleSocket({ type: MSG.INFO_TO_USERS, toUserIds: [payload.fromUserId], message: __t("itemTransfer.onlyAllowed") });
-    return;
-  }
-
-  const quantity = parseTransferQuantity(payload.quantity);
-  const available = getItemQuantity(item);
-  if (!quantity || quantity > available) {
-    await notifyTransferUsers([payload.fromUserId], __t("itemTransfer.invalidQuantity", {
-      quantity: Number.isSafeInteger(available) ? available : 0
-    }));
-    return;
-  }
-
-  const now = Date.now();
-  for (const [id, offer] of pendingTransfers) {
-    if (now - offer.createdAt > OFFER_LIFETIME_MS) pendingTransfers.delete(id);
-  }
-  const requestId = foundry.utils.randomID();
-  const offer = {
-    requestId,
-    createdAt: now,
-    fromUserId: payload.fromUserId,
-    fromActorId: fromActor.id,
-    itemId: item.id,
-    quantity,
-    toUserId: toUser.id,
-    toActorId: toActor.id
-  };
-  pendingTransfers.set(requestId, offer);
-
-  try {
-    await emitToModuleSocket({
-      type: MSG.REQUEST_TO_RECIPIENT,
-      ...offer,
-      fromUserName: fromUser.name,
-      itemName: item.name,
-      itemImg: item.img ?? "icons/svg/item-bag.svg",
-      itemType: item.type
-    });
-  } catch (err) {
-    pendingTransfers.delete(requestId);
-    throw err;
-  }
-}
-
-async function handleRequestToRecipient(payload) {
+async function handleOfferToRecipient(payload) {
   if (payload.toUserId !== game.user.id) return;
+
+  const toActor = game.actors.get(payload.toActorId);
+  if (!toActor || !toActor.testUserPermission(game.user, "OWNER")) {
+    await emitToModuleSocket({
+      type: MSG.RESPONSE_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      accepted: false,
+      error: "recipientNoPermission"
+    });
+    ui.notifications?.warn?.(__t("itemTransfer.recipientNoPermission"));
+    return;
+  }
 
   const typeLabel = String(payload.itemType ?? "").toUpperCase();
   const content = `
@@ -614,7 +585,13 @@ async function handleRequestToRecipient(payload) {
         label: __t("itemTransfer.accept"),
         default: true,
         callback: async () => {
-          await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: true, request: payload, responderUserId: game.user.id });
+          await emitToModuleSocket({
+            type: MSG.RESPONSE_TO_SENDER,
+            requestId: payload.requestId,
+            toSenderUserId: payload.fromUserId,
+            responderUserId: game.user.id,
+            accepted: true
+          });
           ui.notifications.info(__t("itemTransfer.acceptedInfo"));
         }
       },
@@ -623,7 +600,13 @@ async function handleRequestToRecipient(payload) {
         icon: "fa-solid fa-times",
         label: __t("itemTransfer.decline"),
         callback: async () => {
-          await emitToModuleSocket({ type: MSG.RESPONSE_TO_GM, accepted: false, request: payload, responderUserId: game.user.id });
+          await emitToModuleSocket({
+            type: MSG.RESPONSE_TO_SENDER,
+            requestId: payload.requestId,
+            toSenderUserId: payload.fromUserId,
+            responderUserId: game.user.id,
+            accepted: false
+          });
           ui.notifications.info(__t("itemTransfer.declinedInfo"));
         }
       }
@@ -631,122 +614,249 @@ async function handleRequestToRecipient(payload) {
   });
 }
 
-async function handleResponseToGM(payload) {
-  if (!isPrimaryGM()) return;
+async function handleResponseToSender(payload) {
+  if (payload.toSenderUserId !== game.user.id) return;
 
-  const requestId = payload.request?.requestId;
-  const req = pendingTransfers.get(requestId);
-  if (!req || payload.responderUserId !== req.toUserId) return;
-  pendingTransfers.delete(requestId); // A response is processed only once.
+  const req = pendingTransfers.get(payload.requestId);
+  if (!req || req.phase !== "offered" || payload.responderUserId !== req.toUserId) return;
+
   if (Date.now() - req.createdAt > OFFER_LIFETIME_MS) {
-    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.expired"));
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.warn?.(__t("itemTransfer.expired"));
+    return;
+  }
+
+  const toUser = game.users.get(req.toUserId);
+  if (!payload.accepted) {
+    pendingTransfers.delete(req.requestId);
+    const message = payload.error === "recipientNoPermission"
+      ? __t("itemTransfer.recipientNoPermission")
+      : __t("itemTransfer.declinedBy", { user: toUser?.name ?? "Player" });
+    ui.notifications?.info?.(message);
     return;
   }
 
   const fromActor = game.actors.get(req.fromActorId);
-  const toActor = game.actors.get(req.toActorId);
   const item = fromActor?.items?.get(req.itemId);
-  const fromUser = game.users.get(req.fromUserId);
-  const toUser = game.users.get(req.toUserId);
-
-  if (!fromActor || !toActor || !fromUser || !toUser) return;
-
-  if (!payload.accepted) {
-    await notifyTransferUsers([req.fromUserId], __t("itemTransfer.declinedBy", { user: toUser.name }));
+  const toActor = game.actors.get(req.toActorId);
+  if (!fromActor || !item || !toUser?.active || !toActor) {
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.error?.(__t("itemTransfer.transferFailedMsg"));
+    return;
+  }
+  if (!fromActor.testUserPermission(game.user, "OWNER")) {
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.error?.(__t("itemTransfer.senderNoPermission"));
+    return;
+  }
+  if (!toActor.testUserPermission(toUser, "OWNER")) {
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.error?.(__t("itemTransfer.recipientNoPermission"));
     return;
   }
 
-  if (!item) {
-    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.missingItem", { actor: fromActor.name }));
-    return;
-  }
-
-  if (!isAllowedItem(item)) {
-    await notifyTransferUsers([req.fromUserId], __t("itemTransfer.onlyAllowed"));
+  const available = getItemQuantity(item);
+  const quantity = parseTransferQuantity(req.quantity);
+  if (!quantity || quantity > available) {
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.warn?.(__t("itemTransfer.invalidQuantity", {
+      quantity: Number.isSafeInteger(available) ? available : 0
+    }));
     return;
   }
 
   const lockKey = `${fromActor.id}:${item.id}`;
-  const recipientLockKey = `recipient:${toActor.id}`;
-  if (transfersInProgress.has(lockKey) || transfersInProgress.has(recipientLockKey)) {
-    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.busy"));
+  if (transfersInProgress.has(lockKey)) {
+    pendingTransfers.delete(req.requestId);
+    ui.notifications?.warn?.(__t("itemTransfer.busy"));
     return;
   }
   transfersInProgress.add(lockKey);
-  transfersInProgress.add(recipientLockKey);
+
+  const originalItemData = item.toObject();
+  const commitItemData = foundry.utils.deepClone(originalItemData);
+  commitItemData.system ??= {};
+  commitItemData.system.quantity ??= {};
+  commitItemData.system.quantity.value = quantity;
 
   try {
-    const available = getItemQuantity(item);
-    const quantity = parseTransferQuantity(req.quantity);
-    if (!quantity || quantity > available) {
-      await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.invalidQuantity", {
-        quantity: Number.isSafeInteger(available) ? available : 0
-      }));
-      return;
+    if (quantity === available) {
+      await fromActor.deleteEmbeddedDocuments("Item", [item.id]);
+    } else {
+      await item.update({ "system.quantity.value": available - quantity });
     }
 
-    let created = [];
-    let existingItem = null;
-    let previousRecipientQuantity = null;
-    try {
-      existingItem = Array.from(toActor.items.values()).find(other => canStackItems(item, other)) ?? null;
-      if (existingItem) {
-        previousRecipientQuantity = getItemQuantity(existingItem);
-        const newQuantity = previousRecipientQuantity + quantity;
-        if (!Number.isSafeInteger(previousRecipientQuantity) || previousRecipientQuantity < 0 ||
-            !Number.isSafeInteger(newQuantity)) {
-          throw new Error("Recipient item quantity is invalid or would overflow");
-        }
-        await existingItem.update({ "system.quantity.value": newQuantity });
-      } else {
-        const itemData = item.toObject();
-        delete itemData._id; // New item only when no exact-name match exists.
-        itemData.system ??= {};
-        itemData.system.quantity ??= {};
-        itemData.system.quantity.value = quantity;
-        created = await toActor.createEmbeddedDocuments("Item", [itemData]);
-        if (!Array.isArray(created) || created.length !== 1) throw new Error("Recipient item creation failed");
-      }
+    req.phase = "committing";
+    req.lockKey = lockKey;
+    req.rollback = { originalItemData, available, deleted: quantity === available };
+    req.timeoutId = globalThis.setTimeout(() => {
+      rollbackOutgoingTransfer(req.requestId, __t("itemTransfer.transferTimeout"));
+    }, COMMIT_TIMEOUT_MS);
 
-      if (quantity === available) {
-        await fromActor.deleteEmbeddedDocuments("Item", [item.id]);
-      } else {
-        await item.update({ "system.quantity.value": available - quantity });
-      }
-    } catch (err) {
-      // If the sender's stock could not be changed, restore the recipient's
-      // previous stack quantity or delete the newly created item.
-      try {
-        if (existingItem && Number.isSafeInteger(previousRecipientQuantity) &&
-            getItemQuantity(existingItem) !== previousRecipientQuantity) {
-          await existingItem.update({ "system.quantity.value": previousRecipientQuantity });
-        } else if (created.length) {
-          await toActor.deleteEmbeddedDocuments("Item", created.map(newItem => newItem.id));
-        }
-      } catch (rollbackError) {
-        console.error(`${MODULE_ID} | item-transfer | rollback failed; GM must check inventories`, rollbackError);
-        await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.rollbackFailed"));
-      }
-      throw err;
-    }
-
-    try {
-      await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.transferred", {
-        item: item.name,
-        quantity,
-        from: fromActor.name,
-        to: toActor.name
-      }));
-    } catch (notifyError) {
-      console.warn(`${MODULE_ID} | item-transfer | transfer completed but notification failed`, notifyError);
-    }
+    await emitToModuleSocket({
+      type: MSG.COMMIT_TO_RECIPIENT,
+      requestId: req.requestId,
+      toUserId: req.toUserId,
+      toActorId: req.toActorId,
+      fromUserId: req.fromUserId,
+      fromActorId: req.fromActorId,
+      fromActorName: fromActor.name,
+      itemData: commitItemData,
+      quantity
+    });
   } catch (err) {
-    console.error(`${MODULE_ID} | item-transfer | GM transfer failed`, err);
-    await notifyTransferUsers([req.fromUserId, req.toUserId], __t("itemTransfer.transferFailedMsg"));
-  } finally {
-    transfersInProgress.delete(lockKey);
-    transfersInProgress.delete(recipientLockKey);
+    console.error(`${MODULE_ID} | item-transfer | sender commit failed`, err);
+    await rollbackOutgoingTransfer(req.requestId, __t("itemTransfer.transferFailedMsg"));
   }
+}
+
+async function handleCommitToRecipient(payload) {
+  if (payload.toUserId !== game.user.id) return;
+
+  const cached = recipientCommitResults.get(payload.requestId);
+  if (cached && Date.now() - cached.createdAt < OFFER_LIFETIME_MS) {
+    await emitToModuleSocket({
+      type: MSG.RESULT_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      success: cached.success,
+      error: cached.error ?? null
+    });
+    return;
+  }
+
+  const toActor = game.actors.get(payload.toActorId);
+  if (!toActor || !toActor.testUserPermission(game.user, "OWNER")) {
+    recipientCommitResults.set(payload.requestId, { createdAt: Date.now(), success: false, error: "recipientNoPermission" });
+    await emitToModuleSocket({
+      type: MSG.RESULT_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      success: false,
+      error: "recipientNoPermission"
+    });
+    return;
+  }
+
+  const itemData = foundry.utils.deepClone(payload.itemData ?? {});
+  const quantity = parseTransferQuantity(payload.quantity);
+  if (!itemData?.name || !isAllowedItem(itemData) || !quantity) {
+    recipientCommitResults.set(payload.requestId, { createdAt: Date.now(), success: false, error: "invalidPayload" });
+    await emitToModuleSocket({
+      type: MSG.RESULT_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      success: false,
+      error: "invalidPayload"
+    });
+    return;
+  }
+
+  try {
+    const existingItem = Array.from(toActor.items.values()).find(other => canStackItems(itemData, other)) ?? null;
+    if (existingItem) {
+      const currentQuantity = getItemQuantity(existingItem);
+      const newQuantity = currentQuantity + quantity;
+      if (!Number.isSafeInteger(currentQuantity) || currentQuantity < 0 || !Number.isSafeInteger(newQuantity)) {
+        throw new Error("Recipient item quantity is invalid or would overflow");
+      }
+      await existingItem.update({ "system.quantity.value": newQuantity });
+    } else {
+      delete itemData._id;
+      itemData.system ??= {};
+      itemData.system.quantity ??= {};
+      itemData.system.quantity.value = quantity;
+      const created = await toActor.createEmbeddedDocuments("Item", [itemData]);
+      if (!Array.isArray(created) || created.length !== 1) throw new Error("Recipient item creation failed");
+    }
+
+    recipientCommitResults.set(payload.requestId, { createdAt: Date.now(), success: true });
+    ui.notifications?.info?.(__t("itemTransfer.received", { item: itemData.name, quantity }));
+    await emitToModuleSocket({
+      type: MSG.RESULT_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      success: true
+    });
+  } catch (err) {
+    console.error(`${MODULE_ID} | item-transfer | recipient commit failed`, err);
+    recipientCommitResults.set(payload.requestId, { createdAt: Date.now(), success: false, error: "recipientUpdateFailed" });
+    await emitToModuleSocket({
+      type: MSG.RESULT_TO_SENDER,
+      requestId: payload.requestId,
+      toSenderUserId: payload.fromUserId,
+      responderUserId: game.user.id,
+      success: false,
+      error: "recipientUpdateFailed"
+    });
+    ui.notifications?.error?.(__t("itemTransfer.transferFailedMsg"));
+  }
+}
+
+async function handleResultToSender(payload) {
+  if (payload.toSenderUserId !== game.user.id) return;
+
+  const req = pendingTransfers.get(payload.requestId);
+  if (!req || req.phase !== "committing" || payload.responderUserId !== req.toUserId) return;
+  if (req.timeoutId) globalThis.clearTimeout(req.timeoutId);
+
+  if (!payload.success) {
+    const message = payload.error === "recipientNoPermission"
+      ? __t("itemTransfer.recipientNoPermission")
+      : __t("itemTransfer.transferFailedMsg");
+    await rollbackOutgoingTransfer(req.requestId, message);
+    return;
+  }
+
+  pendingTransfers.delete(req.requestId);
+  if (req.lockKey) transfersInProgress.delete(req.lockKey);
+
+  const fromActor = game.actors.get(req.fromActorId);
+  const toActor = game.actors.get(req.toActorId);
+  const itemName = req.rollback?.originalItemData?.name ?? "Item";
+  ui.notifications?.info?.(__t("itemTransfer.transferred", {
+    item: itemName,
+    quantity: req.quantity,
+    from: fromActor?.name ?? "",
+    to: toActor?.name ?? ""
+  }));
+}
+
+async function rollbackOutgoingTransfer(requestId, message) {
+  const req = pendingTransfers.get(requestId);
+  if (!req) return;
+  if (req.timeoutId) globalThis.clearTimeout(req.timeoutId);
+
+  try {
+    const fromActor = game.actors.get(req.fromActorId);
+    const rollback = req.rollback;
+    if (fromActor && rollback) {
+      if (rollback.deleted) {
+        const restoreData = foundry.utils.deepClone(rollback.originalItemData);
+        try {
+          await fromActor.createEmbeddedDocuments("Item", [restoreData], { keepId: true });
+        } catch (_) {
+          delete restoreData._id;
+          await fromActor.createEmbeddedDocuments("Item", [restoreData]);
+        }
+      } else {
+        const currentItem = fromActor.items.get(req.itemId);
+        if (currentItem) await currentItem.update({ "system.quantity.value": rollback.available });
+      }
+    }
+  } catch (rollbackError) {
+    console.error(`${MODULE_ID} | item-transfer | sender rollback failed`, rollbackError);
+    ui.notifications?.error?.(__t("itemTransfer.rollbackFailed"));
+  } finally {
+    if (req.lockKey) transfersInProgress.delete(req.lockKey);
+    pendingTransfers.delete(requestId);
+  }
+
+  if (message) ui.notifications?.error?.(message);
 }
 
 async function handleInfoToUsers(payload) {

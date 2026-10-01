@@ -69,18 +69,22 @@
     "invalidQuantity": "Invalid quantity. Currently available: {quantity}.",
     "busy": "This item stack is already being transferred. Please try again.",
     "expired": "The item transfer offer expired. Please send a new one.",
-    "rollbackFailed": "Warning: could not undo the failed transfer. The GM should check both inventories.",
+    "rollbackFailed": "Warning: the failed transfer could not be rolled back automatically. Please check both inventories.",
     "toOnline": "To (online player)",
     "dialogTitle": "Send to player",
     "send": "Send",
     "pickRecipient": "Pick a recipient.",
     "incomingTitle": "Incoming item",
-    "acceptedInfo": "Accepted. The GM will complete the transfer.",
+    "acceptedInfo": "Accepted. Completing the transfer...",
     "declinedInfo": "Declined.",
     "declinedBy": "{user} declined your item transfer.",
     "missingItem": "Item no longer exists in {actor}'s inventory.",
     "transferred": "Transferred \"{item}\" (×{quantity}) from {from} to {to}.",
-    "transferFailedMsg": "Transfer failed (GM: see console)."
+    "transferFailedMsg": "Item transfer failed. Check the browser console for details.",
+    "recipientNoPermission": "The recipient does not have Owner permission for their assigned character, so the item cannot be transferred without a GM.",
+    "senderNoPermission": "You no longer have Owner permission for the source character.",
+    "transferTimeout": "Item transfer timed out and was cancelled.",
+    "received": "Received \"{item}\" (×{quantity})."
   },
   "talent": {
     "searchTitle": "Talent Search",
@@ -914,5 +918,8 @@
     "unused": "Unused",
     "onlyCurrent": "Only the current initiative slot can be claimed.",
     "unusedSlot": "This initiative slot is currently unused and cannot be claimed."
-  }
+  },
+  "GFOE.OfferSent": "Transfer offer sent.",
+  "GFOE.ErrNoGM": "A GM must be connected to complete a money transfer.",
+  "GFOE.ErrNoRecipientUser": "No active owner is available to accept this transfer."
 }

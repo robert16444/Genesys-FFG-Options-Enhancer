@@ -68,18 +68,22 @@
     "invalidQuantity": "Nieprawidłowa liczba sztuk. Aktualnie dostępne: {quantity}.",
     "busy": "Ten stos przedmiotów jest już przekazywany. Spróbuj ponownie.",
     "expired": "Prośba o przekazanie przedmiotu wygasła. Wyślij nową.",
-    "rollbackFailed": "Uwaga: nie udało się cofnąć nieudanego transferu. MG powinien sprawdzić oba ekwipunki.",
+    "rollbackFailed": "Uwaga: nie udało się automatycznie cofnąć nieudanego transferu. Sprawdź oba ekwipunki.",
     "toOnline": "Do (gracza online)",
     "dialogTitle": "Wyślij do gracza",
     "send": "Wyślij",
     "pickRecipient": "Wybierz odbiorcę.",
     "incomingTitle": "Nadchodzący przedmiot",
-    "acceptedInfo": "Zaakceptowano. Mistrz Gry dokończy przekazanie.",
+    "acceptedInfo": "Zaakceptowano. Kończenie transferu...",
     "declinedInfo": "Odrzucono.",
     "declinedBy": "{user} odrzucił prośbę o przekazanie przedmiotu.",
     "missingItem": "Przedmiot nie istnieje już w ekwipunku {actor}.",
     "transferred": "Przekazano „{item}” (×{quantity}) z {from} do {to}.",
-    "transferFailedMsg": "Przekazanie nieudane (GM: szczegóły w konsoli)."
+    "transferFailedMsg": "Przekazanie przedmiotu nie powiodło się. Szczegóły znajdziesz w konsoli przeglądarki.",
+    "recipientNoPermission": "Odbiorca nie ma uprawnień Owner do przypisanej postaci, więc bez aktywnego MG nie można wykonać transferu.",
+    "senderNoPermission": "Nie masz już uprawnień Owner do postaci źródłowej.",
+    "transferTimeout": "Przekazanie przedmiotu przekroczyło limit czasu i zostało anulowane.",
+    "received": "Otrzymano „{item}” (×{quantity})."
   },
   "talent": {
     "searchTitle": "Wyszukiwarka talentów",
@@ -913,5 +917,8 @@
     "unused": "Niewykorzystany",
     "onlyCurrent": "Można claimować tylko aktualny slot inicjatywy.",
     "unusedSlot": "Ten slot inicjatywy jest obecnie niewykorzystany i nie można go zclaimować."
-  }
+  },
+  "GFOE.OfferSent": "Wysłano ofertę transferu.",
+  "GFOE.ErrNoGM": "Aby wykonać transfer pieniędzy, GM musi być połączony z grą.",
+  "GFOE.ErrNoRecipientUser": "Brak aktywnego właściciela, który może zaakceptować ten transfer."
 }

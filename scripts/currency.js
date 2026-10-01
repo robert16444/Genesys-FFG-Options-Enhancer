@@ -3,6 +3,44 @@ import { ownerDocumentOf } from './popout-compat.js';
 
 // Currency Manager for Genesys FFG Options Enhancer
 const MODID = "genesys-ffg-options-enhancer";
+const pendingCurrencyTransfers = new Map();
+const currencyTransfersInProgress = new Set();
+const processedCurrencyCommits = new Set();
+let currencySocketRegistered = false;
+
+function getPrimaryGM() {
+  return Array.from(game.users ?? []).find(user => user?.active && user?.isGM) ?? null;
+}
+
+function isPrimaryGM() {
+  return getPrimaryGM()?.id === game.user?.id;
+}
+
+function getRecipientUser(recipient) {
+  const activeUsers = Array.from(game.users ?? []).filter(user => user?.active);
+  const ownerLevel = CONST.DOCUMENT_OWNERSHIP_LEVELS?.OWNER ?? 3;
+  const playerOwner = activeUsers.find(user => !user.isGM && recipient.testUserPermission?.(user, ownerLevel));
+  if (playerOwner) return playerOwner;
+  return getPrimaryGM();
+}
+
+async function emitCurrencySocket(payload) {
+  return game.socket.emit(`module.${MODID}`, payload);
+}
+
+function refreshCurrencyWindows(actorIds = []) {
+  const ids = new Set(actorIds);
+  for (const app of Object.values(ui.windows ?? {})) {
+    if (app?.id === "gfoe-currency-app" && ids.has(app.actor?.id)) {
+      try { app.render(true); } catch (_) {}
+    }
+  }
+}
+
+function notifyLocal(message, level = "info") {
+  const fn = ui.notifications?.[level] ?? ui.notifications?.info;
+  fn?.call(ui.notifications, message);
+}
 
 function isCurrencyEnabled() {
   try {
@@ -220,7 +258,6 @@ export class GFOESendCoinsApp extends Application {
           const unit = html.find("input[name='send-unit']:checked").val();
           await GFOECurrency.sendCoinsByValue(this.actor, targetId, amount, unit);
         }
-        ui.notifications.info(game.i18n.localize("GFOE.Sent"));
         this.close();
       } catch (err) {
         console.error(err);
@@ -351,7 +388,6 @@ export class GFOECurrencyApp extends Application {
           const unit = html.find("input[name='send-unit']:checked").val();
           await GFOECurrency.sendCoinsByValue(this.actor, targetId, amount, unit);
         }
-        ui.notifications.info(game.i18n.localize("GFOE.Sent"));
         this.render(true);
       } catch (err) {
         console.error(err);
@@ -524,58 +560,144 @@ static async removeCoinsSpecific(actor, delta) {
     return this.setBalance(actor, newBal);
   }
 
-  // --- Transfers ---
   static async _applyTransfer(sender, recipient, delta) {
     const sBal = this.getBalance(sender);
+    const rBal = this.getBalance(recipient);
     const newS = { g: sBal.g - (delta.g||0), s: sBal.s - (delta.s||0), b: sBal.b - (delta.b||0) };
     if (newS.g < 0 || newS.s < 0 || newS.b < 0) throw new Error(game.i18n.localize("GFOE.ErrNotEnoughSpecific"));
-    await this.setBalance(sender, newS);
-    const rBal = this.getBalance(recipient);
     const newR = { g: rBal.g + (delta.g||0), s: rBal.s + (delta.s||0), b: rBal.b + (delta.b||0) };
-    await this.setBalance(recipient, newR);
+    try {
+      await this.setBalance(sender, newS);
+      await this.setBalance(recipient, newR);
+    } catch (error) {
+      try { await this.setBalance(sender, sBal); } catch (_) {}
+      try { await this.setBalance(recipient, rBal); } catch (_) {}
+      throw error;
+    }
+    return { sender: newS, recipient: newR };
   }
 
-  
+  static balanceAfterValueRemoval(balance, amount, unit) {
+    amount = Math.max(0, Math.floor(amount||0));
+    const bal = foundry.utils.duplicate(balance ?? { g: 0, s: 0, b: 0 });
+    if (amount <= 0) return bal;
+    const {silverPerGold, bronzePerSilver} = this.ratios();
+    const coinValue = (u) => (u === "g" ? silverPerGold * bronzePerSilver : (u === "s" ? bronzePerSilver : 1));
+    const totalBase = this.toBase(bal);
+    let reqBase = amount * coinValue(unit);
+    if (reqBase > totalBase) throw new Error(game.i18n.localize("GFOE.ErrNotEnoughFunds"));
+    if (unit === "g") {
+      const pay = Math.min(bal.g||0, amount);
+      bal.g = (bal.g||0) - pay;
+      reqBase -= pay * coinValue("g");
+    } else if (unit === "s") {
+      const pay = Math.min(bal.s||0, amount);
+      bal.s = (bal.s||0) - pay;
+      reqBase -= pay * coinValue("s");
+    } else {
+      const pay = Math.min(bal.b||0, amount);
+      bal.b = (bal.b||0) - pay;
+      reqBase -= pay;
+    }
+    if (reqBase > 0) {
+      const newBal = this.fromBase(this.toBase(bal) - reqBase);
+      bal.g = newBal.g;
+      bal.s = newBal.s;
+      bal.b = newBal.b;
+    }
+    return bal;
+  }
+
+  static async _applyValueTransfer(sender, recipient, amount, unit) {
+    amount = Math.max(0, Math.floor(amount||0));
+    if (amount <= 0) return { sender: this.getBalance(sender), recipient: this.getBalance(recipient) };
+    const sBal = this.getBalance(sender);
+    const rBal = this.getBalance(recipient);
+    const newS = this.balanceAfterValueRemoval(sBal, amount, unit);
+    const {silverPerGold, bronzePerSilver} = this.ratios();
+    const coinValue = (u) => (u === "g" ? silverPerGold * bronzePerSilver : (u === "s" ? bronzePerSilver : 1));
+    const newR = this.fromBase(this.toBase(rBal) + amount * coinValue(unit));
+    try {
+      await this.setBalance(sender, newS);
+      await this.setBalance(recipient, newR);
+    } catch (error) {
+      try { await this.setBalance(sender, sBal); } catch (_) {}
+      try { await this.setBalance(recipient, rBal); } catch (_) {}
+      throw error;
+    }
+    return { sender: newS, recipient: newR };
+  }
+
   static async sendCoinsSpecific(senderActor, recipientId, delta) {
     delta = { g: Math.max(0, Math.floor(delta.g||0)), s: Math.max(0, Math.floor(delta.s||0)), b: Math.max(0, Math.floor(delta.b||0)) };
     if (!recipientId) throw new Error(game.i18n.localize("GFOE.ErrNoRecipient"));
+    if (delta.g + delta.s + delta.b <= 0) return;
+    const recipient = game.actors.get(recipientId);
+    if (!recipient || recipient.id === senderActor.id) throw new Error(game.i18n.localize("GFOE.ErrNoRecipient"));
     const bal = this.getBalance(senderActor);
-    if (delta.g > (bal.g||0) || delta.s > (bal.s||0) || delta.b > (bal.b||0)) {
-      throw new Error(game.i18n.localize("GFOE.ErrNotEnoughSpecific"));
-    }
+    if (delta.g > (bal.g||0) || delta.s > (bal.s||0) || delta.b > (bal.b||0)) throw new Error(game.i18n.localize("GFOE.ErrNotEnoughSpecific"));
+    const recipientUser = getRecipientUser(recipient);
+    if (!recipientUser) throw new Error(game.i18n.localize("GFOE.ErrNoRecipientUser"));
     const offer = {
-      type: "currencyOffer",
-      id: (crypto?.randomUUID?.() || foundry.utils.randomID?.(16) || `${Date.now()}-${Math.floor(Math.random()*1e9)}`),
+      id: crypto?.randomUUID?.() || foundry.utils.randomID?.(16) || `${Date.now()}-${Math.floor(Math.random()*1e9)}`,
+      senderUserId: game.user.id,
+      senderActorId: senderActor.id,
+      recipientActorId: recipient.id,
+      recipientUserId: recipientUser.id,
       mode: "specific",
-      senderId: senderActor.id,
-      recipientId,
-      delta
+      delta,
+      createdAt: Date.now()
     };
-    game.socket.emit("module."+MODID, offer);
-  
-
+    pendingCurrencyTransfers.set(offer.id, offer);
+    notifyLocal(game.i18n.localize("GFOE.OfferSent"));
+    const outgoing = { type: "currencyOffer", ...offer, toUserId: recipientUser.id };
+    if (recipientUser.id === game.user.id) await showCurrencyOffer(outgoing);
+    else await emitCurrencySocket(outgoing);
   }
+
   static async sendCoinsByValue(senderActor, recipientId, amount, unit) {
     amount = Math.max(0, Math.floor(amount||0));
     if (!recipientId) throw new Error(game.i18n.localize("GFOE.ErrNoRecipient"));
     if (amount <= 0) return;
+    const recipient = game.actors.get(recipientId);
+    if (!recipient || recipient.id === senderActor.id) throw new Error(game.i18n.localize("GFOE.ErrNoRecipient"));
     const balBase = this.toBase(this.getBalance(senderActor));
     const {silverPerGold, bronzePerSilver} = this.ratios();
     const coinValue = (u) => (u === "g" ? silverPerGold * bronzePerSilver : (u === "s" ? bronzePerSilver : 1));
-    const reqBase = amount * coinValue(unit);
-    if (reqBase > balBase) {
-      throw new Error(game.i18n.localize("GFOE.ErrNotEnoughFunds"));
-    }
+    if (amount * coinValue(unit) > balBase) throw new Error(game.i18n.localize("GFOE.ErrNotEnoughFunds"));
+    const recipientUser = getRecipientUser(recipient);
+    if (!recipientUser) throw new Error(game.i18n.localize("GFOE.ErrNoRecipientUser"));
     const offer = {
-      type: "currencyOffer",
-      id: (crypto?.randomUUID?.() || foundry.utils.randomID?.(16) || `${Date.now()}-${Math.floor(Math.random()*1e9)}`),
+      id: crypto?.randomUUID?.() || foundry.utils.randomID?.(16) || `${Date.now()}-${Math.floor(Math.random()*1e9)}`,
+      senderUserId: game.user.id,
+      senderActorId: senderActor.id,
+      recipientActorId: recipient.id,
+      recipientUserId: recipientUser.id,
       mode: "value",
-      senderId: senderActor.id,
-      recipientId,
       amount,
-      unit
+      unit,
+      createdAt: Date.now()
     };
-    game.socket.emit("module."+MODID, offer);
+    pendingCurrencyTransfers.set(offer.id, offer);
+    notifyLocal(game.i18n.localize("GFOE.OfferSent"));
+    const outgoing = { type: "currencyOffer", ...offer, toUserId: recipientUser.id };
+    if (recipientUser.id === game.user.id) await showCurrencyOffer(outgoing);
+    else await emitCurrencySocket(outgoing);
+  }
+
+  static async creditTransfer(recipient, offer) {
+    const before = this.getBalance(recipient);
+    let after;
+    if (offer.mode === "specific") {
+      const d = offer.delta ?? { g: 0, s: 0, b: 0 };
+      after = { g: before.g + (d.g||0), s: before.s + (d.s||0), b: before.b + (d.b||0) };
+    } else {
+      const {silverPerGold, bronzePerSilver} = this.ratios();
+      const coinValue = offer.unit === "g" ? silverPerGold * bronzePerSilver : offer.unit === "s" ? bronzePerSilver : 1;
+      after = this.fromBase(this.toBase(before) + Math.max(0, Math.floor(offer.amount||0)) * coinValue);
+    }
+    await this.setBalance(recipient, after);
+    return { before, after };
   }
 
 }
@@ -623,92 +745,175 @@ export function registerCurrencyUIHook() {
 }
 
 
+async function sendCurrencyInfo(userIds, message, level = "info") {
+  const ids = [...new Set((userIds ?? []).filter(Boolean))];
+  if (ids.includes(game.user.id)) notifyLocal(message, level);
+  const remoteIds = ids.filter(id => id !== game.user.id);
+  if (remoteIds.length) await emitCurrencySocket({ type: "currencyInfo", toUserIds: remoteIds, message, level });
+}
+
+async function showCurrencyOffer(payload) {
+  if (payload.toUserId !== game.user.id) return;
+  const sender = game.actors.get(payload.senderActorId);
+  const senderName = sender?.name ?? game.i18n.localize("GFOE.Unknown");
+  let content;
+  if (payload.mode === "specific") {
+    const d = payload.delta ?? {g:0,s:0,b:0};
+    content = `<p>${senderName} ${game.i18n.localize("GFOE.OffersYou")}: ${d.g} ${game.i18n.localize("GFOE.Gold")}, ${d.s} ${game.i18n.localize("GFOE.Silver")}, ${d.b} ${game.i18n.localize("GFOE.Bronze")}.</p>`;
+  } else {
+    const key = payload.unit === "g" ? "GFOE.Gold" : payload.unit === "s" ? "GFOE.Silver" : "GFOE.Bronze";
+    content = `<p>${senderName} ${game.i18n.localize("GFOE.OffersYouValue")}: ${payload.amount} ${game.i18n.localize(key)}.</p>`;
+  }
+  const DialogV2 = foundry.applications?.api?.DialogV2;
+  if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
+  await DialogV2.wait({
+    window: { title: game.i18n.localize("GFOE.TransferOfferTitle"), icon: "fa-solid fa-coins" },
+    position: { width: 430, height: "auto" },
+    content,
+    modal: false,
+    rejectClose: false,
+    buttons: [
+      {
+        action: "accept",
+        label: game.i18n.localize("GFOE.Accept"),
+        icon: "fa-solid fa-check",
+        default: true,
+        callback: async () => {
+          const response = { type: "currencyTransferResponse", id: payload.id, accepted: true, responderUserId: game.user.id, toUserId: payload.senderUserId };
+          if (payload.senderUserId === game.user.id) await handleCurrencyTransferResponse(response);
+          else await emitCurrencySocket(response);
+        }
+      },
+      {
+        action: "decline",
+        label: game.i18n.localize("GFOE.Decline"),
+        icon: "fa-solid fa-xmark",
+        callback: async () => {
+          const response = { type: "currencyTransferResponse", id: payload.id, accepted: false, responderUserId: game.user.id, toUserId: payload.senderUserId };
+          if (payload.senderUserId === game.user.id) await handleCurrencyTransferResponse(response);
+          else await emitCurrencySocket(response);
+        }
+      }
+    ]
+  });
+}
+
+async function handleCurrencyTransferResponse(payload) {
+  if (payload.toUserId !== game.user.id) return;
+  const offer = pendingCurrencyTransfers.get(payload.id);
+  if (!offer || payload.responderUserId !== offer.recipientUserId) return;
+  if (!payload.accepted) {
+    pendingCurrencyTransfers.delete(payload.id);
+    notifyLocal(game.i18n.localize("GFOE.TransferDeclined"));
+    return;
+  }
+  if (currencyTransfersInProgress.has(offer.id)) return;
+  currencyTransfersInProgress.add(offer.id);
+  const sender = game.actors.get(offer.senderActorId);
+  if (!sender || (!game.user.isGM && !sender.isOwner)) {
+    pendingCurrencyTransfers.delete(offer.id);
+    currencyTransfersInProgress.delete(offer.id);
+    notifyLocal(game.i18n.localize("GFOE.TransferFailed"), "error");
+    return;
+  }
+  const before = GFOECurrency.getBalance(sender);
+  try {
+    let after;
+    if (offer.mode === "specific") {
+      const d = offer.delta ?? { g: 0, s: 0, b: 0 };
+      after = { g: before.g - (d.g||0), s: before.s - (d.s||0), b: before.b - (d.b||0) };
+      if (after.g < 0 || after.s < 0 || after.b < 0) throw new Error(game.i18n.localize("GFOE.ErrNotEnoughSpecific"));
+    } else {
+      after = GFOECurrency.balanceAfterValueRemoval(before, offer.amount, offer.unit);
+    }
+    await GFOECurrency.setBalance(sender, after);
+    offer.senderBalanceBefore = before;
+    offer.status = "committing";
+    pendingCurrencyTransfers.set(offer.id, offer);
+    refreshCurrencyWindows([sender.id]);
+    const commit = { type: "currencyTransferCommit", ...offer, toUserId: offer.recipientUserId };
+    if (offer.recipientUserId === game.user.id) await handleCurrencyTransferCommit(commit);
+    else await emitCurrencySocket(commit);
+  } catch (error) {
+    console.error("GFOE currency sender update failed:", error);
+    pendingCurrencyTransfers.delete(offer.id);
+    currencyTransfersInProgress.delete(offer.id);
+    notifyLocal(error?.message || game.i18n.localize("GFOE.TransferFailed"), "error");
+  }
+}
+
+async function handleCurrencyTransferCommit(payload) {
+  if (payload.toUserId !== game.user.id) return;
+  const recipient = game.actors.get(payload.recipientActorId);
+  const result = { type: "currencyTransferResult", id: payload.id, toUserId: payload.senderUserId, responderUserId: game.user.id, success: false };
+  try {
+    if (!recipient || (!game.user.isGM && !recipient.isOwner)) throw new Error(game.i18n.localize("GFOE.TransferFailed"));
+    if (!processedCurrencyCommits.has(payload.id)) {
+      await GFOECurrency.creditTransfer(recipient, payload);
+      processedCurrencyCommits.add(payload.id);
+    }
+    refreshCurrencyWindows([recipient.id]);
+    result.success = true;
+    notifyLocal(game.i18n.localize("GFOE.TransferCompleted"));
+  } catch (error) {
+    console.error("GFOE currency recipient update failed:", error);
+    result.error = error?.message || game.i18n.localize("GFOE.TransferFailed");
+    notifyLocal(result.error, "error");
+  }
+  if (payload.senderUserId === game.user.id) await handleCurrencyTransferResult(result);
+  else await emitCurrencySocket(result);
+}
+
+async function handleCurrencyTransferResult(payload) {
+  if (payload.toUserId !== game.user.id) return;
+  const offer = pendingCurrencyTransfers.get(payload.id);
+  if (!offer || payload.responderUserId !== offer.recipientUserId) return;
+  const sender = game.actors.get(offer.senderActorId);
+  if (payload.success) {
+    pendingCurrencyTransfers.delete(offer.id);
+    currencyTransfersInProgress.delete(offer.id);
+    if (sender) refreshCurrencyWindows([sender.id]);
+    notifyLocal(game.i18n.localize("GFOE.TransferCompleted"));
+    return;
+  }
+  try {
+    if (sender && offer.senderBalanceBefore) await GFOECurrency.setBalance(sender, offer.senderBalanceBefore);
+  } catch (rollbackError) {
+    console.error("GFOE currency rollback failed:", rollbackError);
+  }
+  pendingCurrencyTransfers.delete(offer.id);
+  currencyTransfersInProgress.delete(offer.id);
+  if (sender) refreshCurrencyWindows([sender.id]);
+  notifyLocal(payload.error || game.i18n.localize("GFOE.TransferFailed"), "error");
+}
+
 export function registerCurrencySocket() {
-  if (!isCurrencyEnabled() || !game.socket) return;
-  game.socket.on("module."+MODID, async (payload) => {
+  if (!isCurrencyEnabled() || !game.socket || currencySocketRegistered) return;
+  currencySocketRegistered = true;
+  game.socket.on(`module.${MODID}`, async payload => {
     try {
-      if (!isCurrencyEnabled()) return;
-      // Recipient popup
-      if (payload?.type === "currencyOffer") {
-        const recipient = game.actors.get(payload.recipientId);
-        if (!recipient) return;
-
-        const activeUsers = Array.from(game.users ?? []).filter(u => u?.active);
-        const nonGmOwners = activeUsers.filter(u => !u.isGM && recipient.testUserPermission?.(u, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER));
-        const fallbackGmOwners = activeUsers.filter(u => u.isGM && recipient.testUserPermission?.(u, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER));
-        const eligibleUsers = nonGmOwners.length ? nonGmOwners : fallbackGmOwners;
-        const isCurrentUserEligible = eligibleUsers.some(u => u.id === game.user.id);
-        if (!isCurrentUserEligible) return;
-
-        const sender = game.actors.get(payload.senderId);
-        const senderName = sender?.name ?? game.i18n.localize("GFOE.Unknown");
-        let content = "";
-        if (payload.mode === "specific") {
-          const d = payload.delta || {g:0,s:0,b:0};
-          content = `<p>${senderName} ${game.i18n.localize("GFOE.OffersYou")}: ${d.g} ${game.i18n.localize("GFOE.Gold")}, ${d.s} ${game.i18n.localize("GFOE.Silver")}, ${d.b} ${game.i18n.localize("GFOE.Bronze")}.</p>`;
-        } else {
-          content = `<p>${senderName} ${game.i18n.localize("GFOE.OffersYouValue")}: ${payload.amount} ${game.i18n.localize(payload.unit === "g" ? "GFOE.Gold" : payload.unit === "s" ? "GFOE.Silver" : "GFOE.Bronze")}.</p>`;
-        }
-
-        const DialogV2 = foundry.applications?.api?.DialogV2;
-        if (!DialogV2) throw new Error("Foundry DialogV2 API is unavailable.");
-        await DialogV2.wait({
-          window: { title: game.i18n.localize("GFOE.TransferOfferTitle"), icon: "fa-solid fa-coins" },
-          position: { width: 430, height: "auto" },
-          content,
-          modal: false,
-          rejectClose: false,
-          buttons: [
-            {
-              action: "accept",
-              label: game.i18n.localize("GFOE.Accept"),
-              icon: "fa-solid fa-check",
-              default: true,
-              callback: () => game.socket.emit("module."+MODID, { type: "currencyOfferAccept", id: payload.id, payload })
-            },
-            {
-              action: "decline",
-              label: game.i18n.localize("GFOE.Decline"),
-              icon: "fa-solid fa-xmark",
-              callback: () => game.socket.emit("module."+MODID, { type: "currencyOfferDecline", id: payload.id, payload })
-            }
-          ]
-        });
+      if (!isCurrencyEnabled() || !payload?.type) return;
+      if (payload.type === "currencyOffer") {
+        await showCurrencyOffer(payload);
         return;
       }
-
-      // GM executor
-      if (!game.user.isGM) return;
-
-      if (payload?.type === "currencyOfferAccept") {
-        const data = payload.payload;
-        const sender = game.actors.get(data.senderId);
-        const recipient = game.actors.get(data.recipientId);
-        if (!sender || !recipient) return;
-        try {
-          if (data.mode === "specific") {
-            await GFOECurrency._applyTransfer(sender, recipient, data.delta || {g:0,s:0,b:0});
-          } else {
-            await GFOECurrency.removeCoinsByValue(sender, data.amount, data.unit);
-            const {silverPerGold, bronzePerSilver} = GFOECurrency.ratios();
-            const coinValue = (u) => (u === "g" ? silverPerGold * bronzePerSilver : (u === "s" ? bronzePerSilver : 1));
-            const reqBase = data.amount * coinValue(data.unit);
-            const base = GFOECurrency.toBase(GFOECurrency.getBalance(recipient)) + reqBase;
-            const newR = GFOECurrency.fromBase(base);
-            await GFOECurrency.setBalance(recipient, newR);
-          }
-          ui.notifications.info(game.i18n.localize("GFOE.TransferCompleted"));
-        } catch (e) {
-          console.error(e);
-          ui.notifications.error(game.i18n.localize("GFOE.TransferFailed"));
-        }
-        return;
-      } else if (payload?.type === "currencyOfferDecline") {
-        ui.notifications.info(game.i18n.localize("GFOE.TransferDeclined"));
+      if (payload.type === "currencyTransferResponse") {
+        await handleCurrencyTransferResponse(payload);
         return;
       }
-    } catch (e) {
-      console.error("GFOE socket error:", e);
+      if (payload.type === "currencyTransferCommit") {
+        await handleCurrencyTransferCommit(payload);
+        return;
+      }
+      if (payload.type === "currencyTransferResult") {
+        await handleCurrencyTransferResult(payload);
+        return;
+      }
+      if (payload.type === "currencyInfo") {
+        if (Array.isArray(payload.toUserIds) && payload.toUserIds.includes(game.user.id)) notifyLocal(payload.message, payload.level);
+      }
+    } catch (error) {
+      console.error("GFOE socket error:", error);
     }
   });
 }
@@ -720,20 +925,14 @@ export function registerCurrencyAutoRefresh() {
       if (!isCurrencyEnabled()) return;
       try {
         const flags = diff?.flags?.[MODID];
-        if (flags && Object.prototype.hasOwnProperty.call(flags, "currency")) {
-          const win = Object.values(ui.windows || {}).find(w => w?.id === "gfoe-currency-app");
-          if (win && win.actor?.id === actor.id) win.render(true);
-        }
+        if (flags && Object.prototype.hasOwnProperty.call(flags, "currency")) refreshCurrencyWindows([actor.id]);
       } catch (e) { console.error(e); }
     });
 
     if (game.socket) {
       game.socket.on("module."+MODID, (payload) => {
         try {
-          if (payload?.type === "currencyRefresh") {
-            const win = Object.values(ui.windows || {}).find(w => w?.id === "gfoe-currency-app");
-            if (win && payload.actorIds && payload.actorIds.includes?.(win.actor?.id)) win.render(true);
-          }
+          if (payload?.type === "currencyRefresh") refreshCurrencyWindows(payload.actorIds ?? []);
         } catch (e) { console.error(e); }
       });
     }
