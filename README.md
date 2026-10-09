@@ -1,12 +1,8 @@
 # Genesys FFG Options Enhancer
 
-![Downloads](https://img.shields.io/github/downloads/robert16444/Genesys-FFG-Options-Enhancer/total?style=for-the-badge&label=Downloads)
+![Downloads](https://img.shields.io/github/downloads/robert16444/Genesys-FFG-Options-Enhancer/total?style=for-the-badge&label=Downloads) [![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2Fgenesys-ffg-options-enhancer&style=for-the-badge)](https://forge-vtt.com/bazaar)
 
-[![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2Fgenesys-ffg-options-enhancer&style=for-the-badge)](https://forge-vtt.com/bazaar)
-
-![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange?style=for-the-badge)
-
-![System](https://img.shields.io/badge/StarWarsFFG-2.0.4-blue?style=for-the-badge)
+![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange?style=for-the-badge) ![System](https://img.shields.io/badge/StarWarsFFG-2.0.4-blue?style=for-the-badge)
 
 **Genesys FFG Options Enhancer** is a quality-of-life module for **Foundry VTT** designed mainly for the Genesys RPG / Star Wars FFG system.  
 It adds GM and player tools, combat automation, initiative utilities, inventory and currency management, and other QoL improvements while relying on the system's native mechanics wherever possible.
