@@ -4,7 +4,7 @@
 
 ![Foundry Version](https://img.shields.io/badge/Foundry-v13-orange?style=for-the-badge) ![System](https://img.shields.io/badge/StarWarsFFG-2.0.4-blue?style=for-the-badge)
 
-**Genesys FFG Options Enhancer** is a quality-of-life module for **Foundry VTT** designed mainly for the Genesys RPG / Star Wars FFG system.  
+**Genesys FFG Options Enhancer** is a quality-of-life module for **Foundry VTT** designed for the [Genesys RPG / Star Wars FFG](https://github.com/StarWarsFoundryVTT/StarWarsFFG) system.  
 It adds GM and player tools, combat automation, initiative utilities, inventory and currency management, and other QoL improvements while relying on the system's native mechanics wherever possible.
 
 ---
